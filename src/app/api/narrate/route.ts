@@ -3,8 +3,12 @@ import { ollamaClient } from '@/lib/ai/client'
 import { PhotoAnalysis, StyleType } from '@/types'
 import { buildNarratePrompt } from '@/lib/ai/prompts'
 import { STYLES } from '@/types/style'
+import { log } from '@/lib/logger'
+
+const TAG = 'narrate'
 
 export async function POST(request: NextRequest) {
+  const startTime = Date.now()
   try {
     const body = await request.json()
     const { analyses, style, customStylePrompt } = body as {
@@ -14,8 +18,11 @@ export async function POST(request: NextRequest) {
     }
 
     if (!analyses || !style) {
+      log.warn(TAG, 'Missing analyses or style in request')
       return Response.json({ error: 'analyses and style are required' }, { status: 400 })
     }
+
+    log.info(TAG, `Starting narration (style: ${style}, photos: ${analyses.length})`)
 
     const styleTheme = STYLES[style]
     const prompt = buildNarratePrompt(analyses, styleTheme.narrativePrompt, customStylePrompt)
@@ -27,6 +34,7 @@ export async function POST(request: NextRequest) {
       temperature: 0.8,
     })
 
+    let charCount = 0
     const encoder = new TextEncoder()
     const readable = new ReadableStream({
       async start(controller) {
@@ -34,11 +42,14 @@ export async function POST(request: NextRequest) {
           for await (const chunk of stream) {
             const text = chunk.choices[0]?.delta?.content || ''
             if (text) {
+              charCount += text.length
               controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text })}\n\n`))
             }
           }
           controller.enqueue(encoder.encode('data: [DONE]\n\n'))
+          log.info(TAG, `Narration complete in ${Date.now() - startTime}ms (${charCount} chars)`)
         } catch (err) {
+          log.error(TAG, `Stream error after ${Date.now() - startTime}ms`, err instanceof Error ? err.message : String(err))
           controller.error(err)
         } finally {
           controller.close()
@@ -54,7 +65,8 @@ export async function POST(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error('Narrate error:', error)
+    const elapsed = Date.now() - startTime
+    log.error(TAG, `Narration failed after ${elapsed}ms`, error instanceof Error ? error.message : String(error))
     return Response.json(
       { error: 'Narrative generation failed', details: String(error) },
       { status: 500 }
