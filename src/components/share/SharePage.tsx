@@ -1,13 +1,36 @@
 'use client'
 
+import { useEffect } from 'react'
 import { useAppStore } from '@/store/useAppStore'
 import { STYLES } from '@/types/style'
+import { HistoryEntry } from '@/types'
 
 export function SharePage() {
   const chapters = useAppStore((s) => s.chapters)
   const style = useAppStore((s) => s.style)
-  const theme = STYLES[style]
+  const addHistory = useAppStore((s) => s.addHistory)
   const reset = useAppStore((s) => s.reset)
+  const theme = STYLES[style]
+
+  useEffect(() => {
+    const existing = useAppStore.getState().history.some(
+      (h) => h.id === chapters[0]?.id
+    )
+    if (existing || chapters.length === 0) return
+
+    const entry: HistoryEntry = {
+      id: `hist-${Date.now()}`,
+      createdAt: new Date().toISOString(),
+      style,
+      chapterCount: chapters.length,
+      chapterSummaries: chapters.map((ch) => ({
+        title: ch.title,
+        location: ch.photos[0]?.analysis?.location_guess || '未知地点',
+        narrativePreview: ch.narrative?.text?.slice(0, 60) || '',
+      })),
+    }
+    addHistory(entry)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div

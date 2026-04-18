@@ -1,5 +1,22 @@
 import { create } from 'zustand'
-import { AppState, PhotoFile, PhotoChapter, StyleType } from '@/types'
+import { AppState, PhotoFile, PhotoChapter, StyleType, HistoryEntry } from '@/types'
+
+const HISTORY_KEY = 'zhuiyi-history'
+const MAX_HISTORY = 20
+
+function loadHistory(): HistoryEntry[] {
+  if (typeof window === 'undefined') return []
+  try {
+    return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]')
+  } catch {
+    return []
+  }
+}
+
+function saveHistory(entries: HistoryEntry[]) {
+  if (typeof window === 'undefined') return
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(entries.slice(0, MAX_HISTORY)))
+}
 
 interface AppStore {
   state: AppState
@@ -19,18 +36,24 @@ interface AppStore {
   customStylePrompt: string
   setCustomStylePrompt: (prompt: string) => void
 
+  history: HistoryEntry[]
+  addHistory: (entry: HistoryEntry) => void
+  clearHistory: () => void
+
   reset: () => void
+  _hydrate: () => void
 }
 
 const initialState = {
   state: 'landing' as AppState,
-  photos: [],
-  chapters: [],
+  photos: [] as PhotoFile[],
+  chapters: [] as PhotoChapter[],
   style: 'ancient' as StyleType,
   customStylePrompt: '',
+  history: [] as HistoryEntry[],
 }
 
-export const useAppStore = create<AppStore>((set) => ({
+export const useAppStore = create<AppStore>((set, get) => ({
   ...initialState,
 
   setState: (state) => set({ state }),
@@ -48,8 +71,22 @@ export const useAppStore = create<AppStore>((set) => ({
     })),
 
   setStyle: (style) => set({ style }),
-
   setCustomStylePrompt: (prompt) => set({ customStylePrompt: prompt }),
 
-  reset: () => set(initialState),
+  addHistory: (entry) => {
+    const history = [entry, ...get().history].slice(0, MAX_HISTORY)
+    saveHistory(history)
+    set({ history })
+  },
+
+  clearHistory: () => {
+    saveHistory([])
+    set({ history: [] })
+  },
+
+  reset: () => set({ ...initialState, history: get().history }),
+
+  _hydrate: () => {
+    set({ history: loadHistory() })
+  },
 }))

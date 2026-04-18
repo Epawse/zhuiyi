@@ -49,3 +49,11 @@ export interface ChapterNarrative {
   text: string
   style: StyleType
 }
+
+export interface HistoryEntry {
+  id: string
+  createdAt: string
+  style: StyleType
+  chapterCount: number
+  chapterSummaries: { title: string; location: string; narrativePreview: string }[]
+}
