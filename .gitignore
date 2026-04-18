@@ -1,1 +1,10 @@
 .DS_Store
+
+# Research & pre-work (not part of project code)
+抖音AI创变者计划调研.md
+AI黑客松获奖产品与主流产品调研.md
+brainstorm/
+
+# Local tool configs
+.opencode/
+__pycache__/
