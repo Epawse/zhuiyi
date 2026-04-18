@@ -1,4 +1,4 @@
-# 追忆 Zhuīyì 📜
+# 追忆 Zhuīyì 📜 
 
 <div align="center">
   <h3>AI 驱动的照片编年史生成器</h3>
