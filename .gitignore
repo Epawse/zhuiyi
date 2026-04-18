@@ -46,4 +46,4 @@ temp-pictures/
 .codex/
 .agents/
 __pycache__/
-.trellis/.developer
+.trellis/.developerpackage-lock.json
