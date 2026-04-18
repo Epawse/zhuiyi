@@ -1,54 +1,91 @@
-# Directory Structure
+# Backend Directory Structure
 
-> How backend code is organized in this project.
+> API route organization for the Zhuīyì project.
 
 ---
 
 ## Overview
 
-<!--
-Document your project's backend directory structure here.
-
-Questions to answer:
-- How are modules/packages organized?
-- Where does business logic live?
-- Where are API endpoints defined?
-- How are utilities and helpers organized?
--->
-
-(To be filled by the team)
+The backend consists of exactly 2 Next.js API route handlers. No separate backend server, no database, no ORM.
 
 ---
 
 ## Directory Layout
 
 ```
-<!-- Replace with your actual structure -->
-src/
-├── ...
-└── ...
+src/app/api/
+├── analyze/
+│   └── route.ts          # POST: Gemini Vision analysis proxy
+└── narrate/
+    └── route.ts          # POST: Gemini narrative generation proxy (SSE)
+
+src/lib/ai/
+├── client.ts             # Gemini API client initialization
+├── prompts.ts            # All prompt templates (organized by style)
+├── analyze.ts             # Photo analysis logic
+├── narrate.ts              # Narrative generation logic
+└── cache.ts               # Narrative style caching
 ```
 
 ---
 
-## Module Organization
+## API Route Design
 
-<!-- How should new features/modules be organized? -->
+### POST /api/analyze
 
-(To be filled by the team)
+Receives a photo (base64) + optional EXIF data, returns structured analysis.
+
+```typescript
+// Request
+interface AnalyzeRequest {
+  image: string;           // base64 encoded photo
+  exif?: {
+    latitude?: number;
+    longitude?: number;
+    datetime?: string;
+  };
+}
+
+// Response
+interface AnalyzeResponse {
+  scene: string;
+  location_guess: string;
+  mood: string[];
+  season: string;
+  time_of_day: string;
+  activity: string;
+  key_objects: string[];
+  notable_detail: string;
+  confidence: 'high' | 'medium' | 'low';
+}
+```
+
+### POST /api/narrate
+
+Receives all photo analyses + style, returns narrative text as SSE stream.
+
+```typescript
+// Request
+interface NarrateRequest {
+  analyses: AnalyzeResponse[];
+  style: StyleType;
+  customStylePrompt?: string;
+}
+
+// Response: Server-Sent Events
+// data: {"text": "甲辰年春"}
+// data: {"text": "，客居武汉"}
+// ...
+// data: [DONE]
+```
 
 ---
 
 ## Naming Conventions
 
-<!-- File and folder naming rules -->
-
-(To be filled by the team)
-
----
-
-## Examples
-
-<!-- Link to well-organized modules as examples -->
-
-(To be filled by the team)
+| Type | Convention | Example |
+|------|-----------|---------|
+| API routes | kebab-case | `/api/analyze`, `/api/narrate` |
+| Lib modules | camelCase | `client.ts`, `prompts.ts` |
+| Prompt templates | UPPER_SNAKE_CASE | `ANCIENT_STYLE_PROMPT`, `PROUST_STYLE_PROMPT` |
+| Environment variables | UPPER_SNAKE_CASE | `GEMINI_API_KEY` |

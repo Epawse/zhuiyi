@@ -1,12 +1,12 @@
 # Backend Development Guidelines
 
-> Best practices for backend development in this project.
+> Best practices for backend development in the Zhuīyì project.
 
 ---
 
 ## Overview
 
-This directory contains guidelines for backend development. Fill in each file with your project's specific conventions.
+This project has a minimal backend — only 2 API route handlers that proxy to Gemini. There is no database, no authentication, no user management. The "backend" exists solely to keep API keys server-side.
 
 ---
 
@@ -14,24 +14,20 @@ This directory contains guidelines for backend development. Fill in each file wi
 
 | Guide | Description | Status |
 |-------|-------------|--------|
-| [Directory Structure](./directory-structure.md) | Module organization and file layout | To fill |
-| [Database Guidelines](./database-guidelines.md) | ORM patterns, queries, migrations | To fill |
-| [Error Handling](./error-handling.md) | Error types, handling strategies | To fill |
-| [Quality Guidelines](./quality-guidelines.md) | Code standards, forbidden patterns | To fill |
-| [Logging Guidelines](./logging-guidelines.md) | Structured logging, log levels | To fill |
+| [Directory Structure](./directory-structure.md) | API route organization | Done |
+| [Error Handling](./error-handling.md) | Error types, handling strategies | Done |
+| [Quality Guidelines](./quality-guidelines.md) | Code standards, forbidden patterns | Done |
+
+**Note**: Database Guidelines and Logging Guidelines are not applicable for this hackathon project (no database, minimal logging needs). They are kept as placeholder files.
 
 ---
 
-## How to Fill These Guidelines
+## Pre-Development Checklist
 
-For each guideline file:
+Before writing any backend code, read:
 
-1. Document your project's **actual conventions** (not ideals)
-2. Include **code examples** from your codebase
-3. List **forbidden patterns** and why
-4. Add **common mistakes** your team has made
-
-The goal is to help AI assistants and new team members understand how YOUR project works.
+1. **Directory Structure** — know where API routes live
+2. **Error Handling** — know how errors are handled and returned
 
 ---
 

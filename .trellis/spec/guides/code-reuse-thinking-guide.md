@@ -8,10 +8,11 @@
 
 **Duplicated code is the #1 source of inconsistency bugs.**
 
-When you copy-paste or rewrite existing logic:
-- Bug fixes don't propagate
-- Behavior diverges over time
-- Codebase becomes harder to understand
+In our hackathon project, the most likely duplication areas are:
+- Photo processing logic (EXIF, compression, coordinate conversion)
+- Style theme values (colors, fonts, animations repeated across components)
+- Narrative generation prompts (similar structure across 3+ styles)
+- Map interaction patterns (same marker creation code in multiple places)
 
 ---
 
@@ -21,79 +22,92 @@ When you copy-paste or rewrite existing logic:
 
 ```bash
 # Search for similar function names
-grep -r "functionName" .
+grep -r "functionName" src/
 
-# Search for similar logic
-grep -r "keyword" .
+# Search for similar patterns
+grep -r "primaryColor\|theme\|style" src/
+
+# Check if a utility exists
+ls src/lib/
 ```
 
-### Step 2: Ask These Questions
+### Step 2: Check These Locations
 
-| Question | If Yes... |
-|----------|-----------|
-| Does a similar function exist? | Use or extend it |
-| Is this pattern used elsewhere? | Follow the existing pattern |
-| Could this be a shared utility? | Create it in the right place |
-| Am I copying code from another file? | **STOP** - extract to shared |
+| What you need | Where to look first |
+|---------------|-------------------|
+| Photo utilities | `src/lib/photo/` (exif.ts, compress.ts, cluster.ts) |
+| AI logic | `src/lib/ai/` (prompts.ts, analyze.ts, narrate.ts) |
+| Map utilities | `src/lib/map/` (amap.ts, markers.ts, route.ts) |
+| Style config | `src/lib/style/themes.ts` (all 3 preset themes) |
+| Types | `src/types/` (photo.ts, narrative.ts, style.ts, map.ts) |
+| State | `src/store/useAppStore.ts` |
 
 ---
 
-## Common Duplication Patterns
+## Project-Specific Reuse Patterns
 
-### Pattern 1: Copy-Paste Functions
+### Style Themes
 
-**Bad**: Copying a validation function to another file
+**All theme values live in `src/lib/style/themes.ts`** as a single source of truth.
 
-**Good**: Extract to shared utilities, import where needed
+```typescript
+// ✅ Good: Import from themes
+import { STYLE_PRESETS } from '@/lib/style/themes';
+const { primaryColor } = STYLE_PRESETS[style];
 
-### Pattern 2: Similar Components
+// ❌ Bad: Hardcoding colors in components
+<div className="text-[#C41A16]">...</div>
+```
 
-**Bad**: Creating a new component that's 80% similar to existing
+### Coordinate Conversion
 
-**Good**: Extend existing component with props/variants
+**GPS to GCJ-02 conversion happens in ONE place**:
 
-### Pattern 3: Repeated Constants
+```typescript
+// ✅ Good: Use the conversion function
+import { wgs84ToGcj02 } from '@/lib/photo/exif';
 
-**Bad**: Defining the same constant in multiple files
+// ❌ Bad: Doing coordinate math inline
+const adjustedLat = lat + 0.0065; // WRONG - varies by location
+```
 
-**Good**: Single source of truth, import everywhere
+### Prompt Templates
+
+**All AI prompts live in `src/lib/ai/prompts.ts`**:
+
+```typescript
+// ✅ Good: Import and use
+import { ANCIENT_STYLE_PROMPT, PROUST_STYLE_PROMPT } from '@/lib/ai/prompts';
+
+// ❌ Bad: Inline prompt strings
+const prompt = "你是一位太史公..."; // No! Use the template
+```
+
+### Error Boundaries
+
+**Each boundary type has ONE reusable component**:
+
+```typescript
+// ✅ Good: Use the shared ErrorBoundary
+import { MapErrorBoundary, AIErrorBoundary } from '@/components/common/ErrorBoundary';
+
+// ❌ Bad: Creating new error boundary per component
+class MyMapErrorBoundary extends React.Component { ... }
+```
 
 ---
 
 ## When to Abstract
 
 **Abstract when**:
-- Same code appears 3+ times
-- Logic is complex enough to have bugs
-- Multiple people might need this
+- Same code appears 2+ times (2 is enough in a hackathon)
+- Logic is complex (coordinate conversion, prompt templates)
+- Multiple components need the same data (theme config)
 
 **Don't abstract when**:
 - Only used once
-- Trivial one-liner
+- Trivial one-liner (`className="text-white"`)
 - Abstraction would be more complex than duplication
-
----
-
-## After Batch Modifications
-
-When you've made similar changes to multiple files:
-
-1. **Review**: Did you catch all instances?
-2. **Search**: Run grep to find any missed
-3. **Consider**: Should this be abstracted?
-
----
-
-## Gotcha: Asymmetric Mechanisms Producing Same Output
-
-**Problem**: When two different mechanisms must produce the same file set (e.g., recursive directory copy for init vs. manual `files.set()` for update), structural changes (renaming, moving, adding subdirectories) only propagate through the automatic mechanism. The manual one silently drifts.
-
-**Symptom**: Init works perfectly, but update creates files at wrong paths or misses files entirely.
-
-**Prevention checklist**:
-- [ ] When migrating directory structures, search for ALL code paths that reference the old structure
-- [ ] If one path is auto-derived (glob/copy) and another is manually listed, the manual one needs updating
-- [ ] Add a regression test that compares outputs from both mechanisms
 
 ---
 
@@ -101,5 +115,7 @@ When you've made similar changes to multiple files:
 
 - [ ] Searched for existing similar code
 - [ ] No copy-pasted logic that should be shared
-- [ ] Constants defined in one place
-- [ ] Similar patterns follow same structure
+- [ ] Theme colors come from `themes.ts`, not hardcoded
+- [ ] Coordinate conversion uses `wgs84ToGcj02()`
+- [ ] AI prompts come from `prompts.ts`
+- [ ] Error boundaries are shared components

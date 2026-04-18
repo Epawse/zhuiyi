@@ -8,65 +8,94 @@
 
 **Most bugs happen at layer boundaries**, not within layers.
 
-Common cross-layer bugs:
-- API returns format A, frontend expects format B
-- Database stores X, service transforms to Y, but loses data
-- Multiple layers implement the same logic differently
+In our project, the key boundaries are:
+- **Client ↔ API Route** (browser ↔ Next.js server)
+- **API Route ↔ Gemini API** (our server ↔ Google's server)
+- **EXIF Extraction ↔ Vision Analysis** (local ↔ remote)
+- **Photo Data ↔ Map Display** (data ↔ visual)
 
 ---
 
-## Before Implementing Cross-Layer Features
+## Data Flow Map
 
-### Step 1: Map the Data Flow
-
-Draw out how data moves:
+### Primary Flow: Upload to Share
 
 ```
-Source → Transform → Store → Retrieve → Transform → Display
+Browser
+  │
+  ├── exifr (EXIF extraction) ──→ PhotoMeta with GPS/time
+  │                                    │
+  ├── POST /api/analyze ──────────────┤
+  │   (base64 image + EXIF)            │
+  │                                    ▼
+  │                              Gemini Vision API
+  │                                    │
+  │                                    ▼
+  │                           PhotoAnalysis (JSON)
+  │                                    │
+  ├── Zustand Store ◄─────────────────┘
+  │     │
+  │     ├── clusterPhotos() ──→ NarrativeChapter[]
+  │     │
+  │     ├── POST /api/narrate (SSE stream)
+  │     │     analyses[] + style ──→ Gemini Text API
+  │     │                              │
+  │     │                              ▼
+  │     │                     Narrative text (streamed)
+  │     │
+  │     ├── AMap rendering
+  │     │     GeoPoint[] + analysis ──→ MapView
+  │     │
+  │     └── html-to-image ──→ Share image
+  │
+  └── No persistence (refresh = data loss, acceptable for hackathon)
 ```
-
-For each arrow, ask:
-- What format is the data in?
-- What could go wrong?
-- Who is responsible for validation?
-
-### Step 2: Identify Boundaries
-
-| Boundary | Common Issues |
-|----------|---------------|
-| API ↔ Service | Type mismatches, missing fields |
-| Service ↔ Database | Format conversions, null handling |
-| Backend ↔ Frontend | Serialization, date formats |
-| Component ↔ Component | Props shape changes |
-
-### Step 3: Define Contracts
-
-For each boundary:
-- What is the exact input format?
-- What is the exact output format?
-- What errors can occur?
 
 ---
 
-## Common Cross-Layer Mistakes
+## Key Boundary Contracts
 
-### Mistake 1: Implicit Format Assumptions
+### Browser → /api/analyze
 
-**Bad**: Assuming date format without checking
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| image | string (base64) | Yes | Compressed to <1MB |
+| exif.latitude | number | No | WGS-84, null if missing |
+| exif.longitude | number | No | WGS-84, null if missing |
+| exif.datetime | string | No | ISO 8601, null if missing |
 
-**Good**: Explicit format conversion at boundaries
+### /api/analyze → Browser
 
-### Mistake 2: Scattered Validation
+| Field | Type | Notes |
+|-------|------|-------|
+| scene | string | Short description |
+| location_guess | string | Landmark name or "未知" |
+| mood | string[] | 1-2 mood tags |
+| confidence | "high"/"medium"/"low" | Certainty level |
 
-**Bad**: Validating the same thing in multiple layers
+### Browser → /api/narrate (SSE)
 
-**Good**: Validate once at the entry point
+Request body:
 
-### Mistake 3: Leaky Abstractions
+| Field | Type | Notes |
+|-------|------|-------|
+| analyses | AnalyzeResponse[] | All photo analyses |
+| style | string | "ancient" / "proust" / "cyber" or custom |
+| customStylePrompt | string | Only when style is custom |
 
-**Bad**: Component knows about database schema
+Response: SSE stream of `data: {"text": "..."}\n\n`, ending with `data: [DONE]\n\n`
 
-**Good**: Each layer only knows its neighbors
+---
+
+## Coordinate System Boundary
+
+**Critical**: EXIF stores WGS-84, AMap uses GCJ-02.
+
+```
+EXIF (WGS-84) → AMap.convertFrom(lnglat, 'gps', callback) → GCJ-02
+```
+
+This conversion MUST happen before passing coordinates to AMap. If skipped, markers will be offset by ~500m in China.
 
 ---
 
@@ -74,21 +103,12 @@ For each boundary:
 
 Before implementation:
 - [ ] Mapped the complete data flow
-- [ ] Identified all layer boundaries
-- [ ] Defined format at each boundary
-- [ ] Decided where validation happens
+- [ ] Identified coordinate system boundaries (WGS-84 → GCJ-02)
+- [ ] Defined format at each API boundary
+- [ ] Decided where validation happens (client-side for UX, server-side for security)
 
 After implementation:
-- [ ] Tested with edge cases (null, empty, invalid)
-- [ ] Verified error handling at each boundary
-- [ ] Checked data survives round-trip
-
----
-
-## When to Create Flow Documentation
-
-Create detailed flow docs when:
-- Feature spans 3+ layers
-- Multiple teams are involved
-- Data format is complex
-- Feature has caused bugs before
+- [ ] Tested with null/missing EXIF data
+- [ ] Tested with Gemini API failure
+- [ ] Tested SSE stream interruption
+- [ ] Verified coordinates display correctly on AMap
