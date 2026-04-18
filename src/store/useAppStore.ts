@@ -81,7 +81,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   hydrate: () => {
-    set({ history: loadHistory() })
+    const saved = loadHistory()
+    if (saved.length > 0) set({ history: saved })
   },
 
   reset: () => set({
@@ -94,5 +95,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 }))
 
 if (typeof window !== 'undefined') {
-  useAppStore.getState().hydrate()
+  requestAnimationFrame(() => {
+    useAppStore.getState().hydrate()
+  })
 }

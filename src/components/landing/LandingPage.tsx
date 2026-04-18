@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAppStore } from '@/store/useAppStore'
 import { UploadArea } from './UploadArea'
 import { STYLES } from '@/types/style'
@@ -13,34 +13,46 @@ export function LandingPage() {
   const clearHistory = useAppStore((s) => s.clearHistory)
   const [showHistory, setShowHistory] = useState(false)
 
+  useEffect(() => {
+    useAppStore.getState().hydrate()
+  }, [])
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 relative">
-      {history.length > 0 && (
-        <button
-          onClick={() => setShowHistory(!showHistory)}
-          className="absolute top-4 right-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/80 backdrop-blur shadow-sm hover:shadow-md transition-all text-sm text-gray-600 hover:text-gray-900"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
-          </svg>
-          历史记录
+      <button
+        onClick={() => setShowHistory(!showHistory)}
+        className={`absolute top-4 right-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full backdrop-blur shadow-sm hover:shadow-md transition-all text-sm ${
+          history.length > 0 ? 'bg-white/80 text-gray-600 hover:text-gray-900' : 'bg-gray-100/60 text-gray-300'
+        }`}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+        </svg>
+        历史记录
+        {history.length > 0 && (
           <span className="bg-black text-white text-xs rounded-full px-1.5 py-0.5">{history.length}</span>
-        </button>
-      )}
+        )}
+      </button>
 
-      {showHistory && history.length > 0 && (
+      {showHistory && (
         <div className="absolute top-14 right-4 w-80 max-h-[70vh] overflow-y-auto bg-white/95 backdrop-blur rounded-2xl shadow-xl p-4 z-50">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-gray-700">历史记录</h3>
-            <button onClick={clearHistory} className="text-xs text-gray-400 hover:text-red-400 transition-colors">
-              清空
-            </button>
+            {history.length > 0 && (
+              <button onClick={clearHistory} className="text-xs text-gray-400 hover:text-red-400 transition-colors">
+                清空
+              </button>
+            )}
           </div>
-          <div className="space-y-2">
-            {history.map((entry) => (
-              <HistoryCard key={entry.id} entry={entry} />
-            ))}
-          </div>
+          {history.length === 0 ? (
+            <p className="text-sm text-gray-400 py-4 text-center">还没有历史记录，上传照片开始你的第一次追忆</p>
+          ) : (
+            <div className="space-y-2">
+              {history.map((entry) => (
+                <HistoryCard key={entry.id} entry={entry} />
+              ))}
+            </div>
+          )}
         </div>
       )}
 
