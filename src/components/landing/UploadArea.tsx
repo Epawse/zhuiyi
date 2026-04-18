@@ -10,25 +10,35 @@ export function UploadArea() {
   const setPhotos = useAppStore((s) => s.setPhotos)
   const setState = useAppStore((s) => s.setState)
   const [dragging, setDragging] = useState(false)
+  const [status, setStatus] = useState('')
 
   const handleFiles = useCallback(
     async (files: FileList) => {
-      const photoFiles = await Promise.all(
-        Array.from(files).map(async (file) => {
-          const converted = await convertHeicToJpeg(file)
-          const { dataUrl } = await compressImage(converted)
-          const exif = await extractExif(converted)
+      const total = files.length
+      const photoFiles = []
 
-          return {
-            id: `photo-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-            file: converted,
-            preview: dataUrl,
-            exif,
-            analysis: null,
-            analyzing: false,
-          }
+      for (let i = 0; i < total; i++) {
+        const file = files[i]
+        setStatus(`处理照片 ${i + 1}/${total}...`)
+
+        // Step 1: Extract EXIF from ORIGINAL file (before HEIC conversion loses it)
+        const exif = await extractExif(file)
+
+        // Step 2: Convert HEIC to JPEG if needed
+        const converted = await convertHeicToJpeg(file)
+
+        // Step 3: Compress and get preview dataUrl
+        const { dataUrl } = await compressImage(converted)
+
+        photoFiles.push({
+          id: `photo-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          file: converted,
+          preview: dataUrl,
+          exif,
+          analysis: null,
+          analyzing: false,
         })
-      )
+      }
 
       setPhotos(photoFiles)
       setState('processing')
@@ -81,6 +91,7 @@ export function UploadArea() {
           onChange={handleChange}
         />
       </label>
+      {status && <p className="mt-2 text-xs text-gray-400">{status}</p>}
     </div>
   )
 }

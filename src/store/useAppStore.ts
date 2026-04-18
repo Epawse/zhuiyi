@@ -39,22 +39,18 @@ interface AppStore {
   history: HistoryEntry[]
   addHistory: (entry: HistoryEntry) => void
   clearHistory: () => void
+  hydrate: () => void
 
   reset: () => void
-  _hydrate: () => void
 }
 
-const initialState = {
+export const useAppStore = create<AppStore>((set, get) => ({
   state: 'landing' as AppState,
   photos: [] as PhotoFile[],
   chapters: [] as PhotoChapter[],
   style: 'ancient' as StyleType,
   customStylePrompt: '',
   history: [] as HistoryEntry[],
-}
-
-export const useAppStore = create<AppStore>((set, get) => ({
-  ...initialState,
 
   setState: (state) => set({ state }),
 
@@ -84,9 +80,19 @@ export const useAppStore = create<AppStore>((set, get) => ({
     set({ history: [] })
   },
 
-  reset: () => set({ ...initialState, history: get().history }),
-
-  _hydrate: () => {
+  hydrate: () => {
     set({ history: loadHistory() })
   },
+
+  reset: () => set({
+    state: 'landing' as AppState,
+    photos: [] as PhotoFile[],
+    chapters: [] as PhotoChapter[],
+    customStylePrompt: '',
+    history: get().history,
+  }),
 }))
+
+if (typeof window !== 'undefined') {
+  useAppStore.getState().hydrate()
+}
