@@ -1,20 +1,25 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useAppStore } from '@/store/useAppStore'
 import { clusterPhotos } from '@/lib/photo/cluster'
+import { PhotoAnalysis } from '@/types'
 
 export function ProcessingPage() {
   const photos = useAppStore((s) => s.photos)
-  const updatePhoto = useAppStore((s) => s.updatePhoto)
   const setChapters = useAppStore((s) => s.setChapters)
   const setState = useAppStore((s) => s.setState)
+  const [results, setResults] = useState<Record<string, PhotoAnalysis | null>>({})
+  const [progress, setProgress] = useState(0)
 
   useEffect(() => {
     const analyzeAll = async () => {
-      for (const photo of photos) {
-        if (photo.analysis) continue
-        updatePhoto(photo.id, { analyzing: true })
+      const currentPhotos = useAppStore.getState().photos
+      const newResults: Record<string, PhotoAnalysis | null> = {}
+
+      for (let i = 0; i < currentPhotos.length; i++) {
+        const photo = currentPhotos[i]
+        setProgress(i)
         try {
           const res = await fetch('/api/analyze', {
             method: 'POST',
@@ -25,11 +30,16 @@ export function ProcessingPage() {
             }),
           })
           const analysis = await res.json()
-          updatePhoto(photo.id, { analysis, analyzing: false })
-        } catch {
-          updatePhoto(photo.id, { analyzing: false })
+          newResults[photo.id] = analysis
+          useAppStore.getState().updatePhoto(photo.id, { analysis, analyzing: false })
+        } catch (err) {
+          console.error('Failed to analyze photo', photo.id, err)
+          newResults[photo.id] = null
+          useAppStore.getState().updatePhoto(photo.id, { analyzing: false })
         }
+        setResults({ ...newResults })
       }
+      setProgress(currentPhotos.length)
 
       const updatedPhotos = useAppStore.getState().photos
       const chapters = clusterPhotos(updatedPhotos)
@@ -40,8 +50,6 @@ export function ProcessingPage() {
     analyzeAll()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const analyzed = photos.filter((p) => p.analysis).length
-
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4">
       <h2 className="text-2xl font-serif mb-6">正在唤醒记忆...</h2>
@@ -50,7 +58,7 @@ export function ProcessingPage() {
         {photos.map((photo) => (
           <div key={photo.id} className="relative aspect-square rounded-lg overflow-hidden">
             <img src={photo.preview} alt="" className="w-full h-full object-cover" />
-            {photo.analyzing && (
+            {photo.analyzing && !photo.analysis && (
               <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
               </div>
@@ -63,7 +71,7 @@ export function ProcessingPage() {
       </div>
 
       <p className="text-gray-500 text-sm">
-        {analyzed} / {photos.length} 张照片已分析
+        {progress} / {photos.length} 张照片已分析
       </p>
     </div>
   )
