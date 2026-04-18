@@ -470,6 +470,21 @@ function StarMap({ chapters, style, summary, coverImage }: {
     ctx.scale(dpr, dpr)
     ctx.clearRect(0, 0, w, h)
 
+    // Draw subtle star field background (seeded for stability)
+    const starCount = Math.floor((w * h) / 3000)
+    let seed = 42
+    const seededRandom = () => { seed = (seed * 16807 + 0) % 2147483647; return seed / 2147483647 }
+    for (let s = 0; s < starCount; s++) {
+      const sx = seededRandom() * w
+      const sy = seededRandom() * h
+      const sr = seededRandom() * 1.2 + 0.3
+      const so = seededRandom() * 0.5 + 0.1
+      ctx.beginPath()
+      ctx.arc(sx, sy, sr, 0, Math.PI * 2)
+      ctx.fillStyle = isDark ? `rgba(255,255,255,${so})` : `rgba(255,255,255,${so * 0.6})`
+      ctx.fill()
+    }
+
     const px = (p: typeof points[0]) => ({ x: p.x * w, y: (1 - p.y) * h + h * 0.05 })
 
     if (points.length > 1) {
@@ -543,7 +558,11 @@ function StarMap({ chapters, style, summary, coverImage }: {
         </div>
       )}
       {!bgImageUrl && (
-        <div className="fixed inset-0 z-0" style={{ backgroundColor: isDark ? '#0a0a0f' : '#1a1a2e' }} />
+        <div className="fixed inset-0 z-0" style={{
+          background: isDark
+            ? `radial-gradient(ellipse at 30% 20%, ${accentColor}08 0%, transparent 50%), radial-gradient(ellipse at 70% 80%, ${theme.colors.secondary}06 0%, transparent 50%), #0a0a0f`
+            : `radial-gradient(ellipse at 30% 20%, ${accentColor}0a 0%, transparent 50%), radial-gradient(ellipse at 70% 80%, ${theme.colors.secondary}08 0%, transparent 50%), #1a1a2e`,
+        }} />
       )}
 
       {/* Content */}
@@ -577,9 +596,11 @@ function StarMap({ chapters, style, summary, coverImage }: {
           className="relative w-full rounded-3xl overflow-hidden"
           style={{
             height: Math.max(400, dimensions.width * 0.7),
-            backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.05)',
-            backdropFilter: 'blur(20px)',
+            backgroundColor: 'rgba(0,0,0,0.25)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
             border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.1)'}`,
+            boxShadow: '0 8px 40px rgba(0,0,0,0.3)',
           }}
         >
           <canvas
