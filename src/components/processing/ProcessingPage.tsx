@@ -3,23 +3,24 @@
 import { useEffect, useState } from 'react'
 import { useAppStore } from '@/store/useAppStore'
 import { clusterPhotos } from '@/lib/photo/cluster'
-import { PhotoAnalysis } from '@/types'
 
 export function ProcessingPage() {
   const photos = useAppStore((s) => s.photos)
   const setChapters = useAppStore((s) => s.setChapters)
   const setState = useAppStore((s) => s.setState)
-  const [results, setResults] = useState<Record<string, PhotoAnalysis | null>>({})
   const [progress, setProgress] = useState(0)
+  const [errorMsg, setErrorMsg] = useState('')
 
   useEffect(() => {
     const analyzeAll = async () => {
       const currentPhotos = useAppStore.getState().photos
-      const newResults: Record<string, PhotoAnalysis | null> = {}
+      let failCount = 0
 
       for (let i = 0; i < currentPhotos.length; i++) {
         const photo = currentPhotos[i]
-        setProgress(i)
+        setProgress(i + 1)
+        useAppStore.getState().updatePhoto(photo.id, { analyzing: true })
+
         try {
           const res = await fetch('/api/analyze', {
             method: 'POST',
@@ -30,16 +31,49 @@ export function ProcessingPage() {
             }),
           })
           const analysis = await res.json()
-          newResults[photo.id] = analysis
-          useAppStore.getState().updatePhoto(photo.id, { analysis, analyzing: false })
+
+          if (analysis.error) {
+            failCount++
+            useAppStore.getState().updatePhoto(photo.id, {
+              analyzing: false,
+              analysis: {
+                scene: '未识别场景',
+                location_guess: '未知地点',
+                mood: [],
+                season: 'spring',
+                time_of_day: 'afternoon',
+                activity: '未知',
+                key_objects: [],
+                notable_detail: '分析失败',
+                confidence: 'low',
+              },
+            })
+          } else {
+            useAppStore.getState().updatePhoto(photo.id, { analysis, analyzing: false })
+          }
         } catch (err) {
-          console.error('Failed to analyze photo', photo.id, err)
-          newResults[photo.id] = null
-          useAppStore.getState().updatePhoto(photo.id, { analyzing: false })
+          failCount++
+          useAppStore.getState().updatePhoto(photo.id, {
+            analyzing: false,
+            analysis: {
+              scene: '未识别场景',
+              location_guess: '未知地点',
+              mood: [],
+              season: 'spring',
+              time_of_day: 'afternoon',
+              activity: '未知',
+              key_objects: [],
+              notable_detail: '分析失败',
+              confidence: 'low',
+            },
+          })
         }
-        setResults({ ...newResults })
       }
-      setProgress(currentPhotos.length)
+
+      if (failCount === currentPhotos.length) {
+        setErrorMsg('所有照片分析失败，请重试')
+        return
+      }
 
       const updatedPhotos = useAppStore.getState().photos
       const chapters = clusterPhotos(updatedPhotos)
@@ -49,6 +83,8 @@ export function ProcessingPage() {
 
     analyzeAll()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const analyzed = photos.filter((p) => p.analysis).length
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4">
@@ -71,8 +107,12 @@ export function ProcessingPage() {
       </div>
 
       <p className="text-gray-500 text-sm">
-        {progress} / {photos.length} 张照片已分析
+        {analyzed} / {photos.length} 张照片已分析
       </p>
+
+      {errorMsg && (
+        <p className="text-red-500 text-sm mt-2">{errorMsg}</p>
+      )}
     </div>
   )
 }
