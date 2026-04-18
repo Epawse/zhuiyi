@@ -42,9 +42,9 @@
 
 | | |
 | :---: | :---: |
-| ![Landing](assets/landing.png) <br> Landing | ![Processing](assets/processing.png) <br> Processing |
-| ![Photo Flow](assets/photo-flow.png) <br> Photo Flow | ![Memory Scroll](assets/memory-scroll.png) <br> Memory Scroll |
-| ![Star Map](assets/star-map.png) <br> Star Map | ![Share](assets/share.png) <br> Share |
+| ![Landing](docs/screenshots/landing.png) <br> Landing | ![Processing](docs/screenshots/processing.png) <br> Processing |
+| ![Photo Flow](docs/screenshots/photo-flow.png) <br> Photo Flow | ![Memory Scroll](docs/screenshots/memory-scroll.png) <br> Memory Scroll |
+| ![Star Map](docs/screenshots/star-map.png) <br> Star Map | ![Share](docs/screenshots/share.png) <br> Share |
 
 ## 🏗️ Tech Stack
 

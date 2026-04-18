@@ -42,9 +42,9 @@
 
 | | |
 | :---: | :---: |
-| ![首页](assets/landing.png) <br> 首页 | ![唤醒记忆](assets/processing.png) <br> 唤醒记忆 |
-| ![照片流](assets/photo-flow.png) <br> 照片流 | ![记忆长卷](assets/memory-scroll.png) <br> 记忆长卷 |
-| ![星图](assets/star-map.png) <br> 星图 | ![分享](assets/share.png) <br> 分享 |
+| ![首页](docs/screenshots/landing.png) <br> 首页 | ![唤醒记忆](docs/screenshots/processing.png) <br> 唤醒记忆 |
+| ![照片流](docs/screenshots/photo-flow.png) <br> 照片流 | ![记忆长卷](docs/screenshots/memory-scroll.png) <br> 记忆长卷 |
+| ![星图](docs/screenshots/star-map.png) <br> 星图 | ![分享](docs/screenshots/share.png) <br> 分享 |
 
 ## 🏗️ 技术架构
 
