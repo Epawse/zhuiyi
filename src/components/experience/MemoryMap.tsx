@@ -52,20 +52,36 @@ export function MemoryMap({ chapters, style }: MemoryMapProps) {
     const photosWithGps = allPhotos.filter((p) => p.lat !== 0 && p.lng !== 0)
 
     if (photosWithGps.length === 0) {
-      // Fallback: arrange points in a gentle arc based on chapter order
+      // Fallback: create points from any available data, even without photos
       const fallbackPoints: MapPoint[] = []
+      const totalItems = chapters.length
+
       chapters.forEach((ch, ci) => {
-        ch.photos.slice(0, 2).forEach((p, pi) => {
-          const t = (ci + pi * 0.3) / Math.max(chapters.length, 1)
+        // Try photos first
+        if (ch.photos.length > 0) {
+          ch.photos.slice(0, 2).forEach((p, pi) => {
+            const t = (ci + pi * 0.3) / Math.max(totalItems, 1)
+            fallbackPoints.push({
+              x: 0.15 + t * 0.7,
+              y: 0.3 + Math.sin(t * Math.PI) * 0.2 + pi * 0.05,
+              label: p.analysis?.location_guess || ch.title,
+              photoPreview: p.preview,
+              chapterIndex: ci,
+            })
+          })
+        } else {
+          // No photos (e.g. restored from history) - use chapter title and analysis info
+          const t = ci / Math.max(totalItems - 1, 1)
           fallbackPoints.push({
             x: 0.15 + t * 0.7,
-            y: 0.3 + Math.sin(t * Math.PI) * 0.2 + pi * 0.05,
-            label: p.analysis?.location_guess || ch.title,
-            photoPreview: p.preview,
+            y: 0.35 + Math.sin(t * Math.PI) * 0.2,
+            label: ch.title,
+            photoPreview: '', // empty string for no preview
             chapterIndex: ci,
           })
-        })
+        }
       })
+
       setPoints(fallbackPoints)
       return
     }
@@ -199,7 +215,8 @@ export function MemoryMap({ chapters, style }: MemoryMapProps) {
     })
   }, [points, dimensions, hoveredPoint, accentColor, lineColor, glowColor, textColor])
 
-  if (points.length === 0) return null
+  // Always show the map when there are chapters, even if points are being calculated
+  if (chapters.length === 0) return null
 
   return (
     <motion.div
@@ -209,7 +226,7 @@ export function MemoryMap({ chapters, style }: MemoryMapProps) {
       transition={{ duration: 1, delay: 0.3 }}
       className="relative w-full rounded-2xl overflow-hidden"
       style={{
-        height: Math.min(300, dimensions.width * 0.5 || 200),
+        height: Math.max(200, Math.min(300, dimensions.width * 0.5)),
         backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : `${theme.colors.surface}40`,
         border: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : `${theme.colors.accent}15`}`,
       }}
@@ -233,7 +250,7 @@ export function MemoryMap({ chapters, style }: MemoryMapProps) {
       />
 
       {/* Hovered photo thumbnail */}
-      {hoveredPoint !== null && points[hoveredPoint] && (
+      {hoveredPoint !== null && points[hoveredPoint] && points[hoveredPoint].photoPreview && (
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}

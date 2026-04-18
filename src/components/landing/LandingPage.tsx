@@ -47,22 +47,38 @@ export function LandingPage() {
     useAppStore.getState().hydrate()
   }, [])
 
+  const theme = STYLES[style]
+
+  // Style-dependent background tint
+  const bgTintMap: Record<StyleType, { from: string; via: string; to: string }> = {
+    ancient: { from: '#0f0e0a', via: '#1a1710', to: '#2a2418' },
+    proust: { from: '#0a0a0f', via: '#0f0f1a', to: '#1a1a2e' },
+    cyber: { from: '#050508', via: '#080812', to: '#0e0e1e' },
+    custom: { from: '#0a0a0f', via: '#10101e', to: '#1a1a2e' },
+  }
+  const bgTint = bgTintMap[style] ?? bgTintMap.proust
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 relative overflow-hidden bg-[#0a0a0f]">
-      {/* Background gradient layers */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0f] via-[#0f0f1a] to-[#1a1a2e]" />
+      {/* Background gradient layers - style-tinted */}
+      <div
+        className="absolute inset-0 transition-colors duration-1000"
+        style={{
+          background: `linear-gradient(to bottom, ${bgTint.from}, ${bgTint.via}, ${bgTint.to})`,
+        }}
+      />
 
       {/* AI-generated landing background */}
       <div
-        className="absolute inset-0 opacity-20 bg-cover bg-center mix-blend-soft-light"
+        className="absolute inset-0 opacity-30 bg-cover bg-center transition-opacity duration-700"
         style={{ backgroundImage: 'url(/bg-landing.jpg)' }}
       />
 
-      {/* Center warm glow - like a fading memory */}
+      {/* Center warm glow - uses theme accent color */}
       <div
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] rounded-full opacity-[0.07]"
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] rounded-full opacity-[0.09] transition-all duration-1000"
         style={{
-          background: 'radial-gradient(ellipse at center, #D4A574 0%, #8B6914 30%, transparent 70%)',
+          background: `radial-gradient(ellipse at center, ${theme.colors.accent} 0%, ${theme.colors.secondary} 30%, transparent 70%)`,
         }}
       />
 

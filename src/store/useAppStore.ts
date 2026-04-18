@@ -121,10 +121,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   hydrate: () => {
     const saved = loadHistory()
-    const hashState = HASH_TO_STATE[window.location.hash] || 'landing'
     set({
       history: saved,
-      state: hashState as AppState,
     })
   },
 

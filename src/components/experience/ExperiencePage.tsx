@@ -189,6 +189,44 @@ export function ExperiencePage() {
         />
       )}
 
+      {/* Full-bleed hero cover image */}
+      {coverImage && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1.5, ease: [0.25, 0.1, 0.25, 1] }}
+          className="relative w-full"
+          style={{ height: '60vh' }}
+        >
+          <img
+            src={coverImage}
+            alt="记忆长卷"
+            className="w-full h-full object-cover"
+          />
+          {/* Gradient overlay at bottom for text readability */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background: `linear-gradient(to top, ${bgBase} 0%, ${bgBase}99 5%, transparent 40%, transparent 80%, ${bgBase}33 100%)`,
+            }}
+          />
+        </motion.div>
+      )}
+
+      {/* Cover placeholder while generating */}
+      {generatingCover && !coverImage && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="w-full flex items-center justify-center"
+          style={{ height: '40vh', backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : theme.colors.surface }}
+        >
+          <span className="text-sm animate-pulse" style={{ color: isDark ? 'rgba(255,255,255,0.3)' : theme.colors.textMuted }}>
+            记忆长卷正在浮现...
+          </span>
+        </motion.div>
+      )}
+
       <div className="relative z-10 max-w-2xl mx-auto px-4 py-8">
         {/* Style switcher */}
         <motion.div
@@ -222,33 +260,6 @@ export function ExperiencePage() {
           })}
         </motion.div>
 
-        {/* Unified cover image hero */}
-        <AnimatePresence>
-          {coverImage && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 1.2, ease: [0.25, 0.1, 0.25, 1] }}
-              className="rounded-2xl overflow-hidden shadow-2xl mb-10"
-            >
-              <img src={coverImage} alt="记忆长卷" className="w-full" />
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {generatingCover && !coverImage && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className={`rounded-2xl h-52 flex items-center justify-center mb-10 ${isDark ? 'glass' : ''}`}
-            style={{ backgroundColor: isDark ? undefined : theme.colors.surface }}
-          >
-            <span className="text-sm animate-pulse" style={{ color: isDark ? 'rgba(255,255,255,0.3)' : theme.colors.textMuted }}>
-              记忆长卷正在浮现...
-            </span>
-          </motion.div>
-        )}
-
         {/* Memory constellation map */}
         <MemoryMap chapters={chapters} style={style} />
 
@@ -280,40 +291,88 @@ export function ExperiencePage() {
         {/* Chapter content */}
         {currentChapter && (
           <div className="space-y-8">
-            {/* Photo grid with glow effect */}
-            <div className="grid grid-cols-3 gap-2">
-              {currentChapter.photos.map((photo, i) => (
-                <motion.div
-                  key={photo.id}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.5, delay: i * 0.08 }}
-                  className="aspect-square rounded-xl overflow-hidden shadow-lg"
-                  style={{
-                    boxShadow: `0 4px 20px ${isDark ? 'rgba(0,255,212,0.1)' : `${theme.colors.accent}20`}`,
-                  }}
-                >
-                  <img src={photo.preview} alt="" className="w-full h-full object-cover" />
-                </motion.div>
-              ))}
+            {/* Chapter title with decorative accent */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+            >
+              <div
+                className="w-12 h-0.5 mb-3"
+                style={{ backgroundColor: theme.colors.accent }}
+              />
+              <h2
+                className="text-2xl md:text-3xl font-bold"
+                style={{ fontFamily: theme.font.heading, color: textBase }}
+              >
+                {currentChapter.title}
+              </h2>
+            </motion.div>
+
+            {/* Photo grid - polaroid/scattered style */}
+            <div className="flex flex-wrap justify-center gap-3">
+              {currentChapter.photos.map((photo, i) => {
+                // Deterministic slight rotation per photo
+                const rotations = [-2, 1.5, -1, 2, -1.5, 1, -2.5, 2, 0.5, -1]
+                const rotation = rotations[i % rotations.length]
+                return (
+                  <motion.div
+                    key={photo.id}
+                    initial={{ opacity: 0, y: 20, rotate: 0 }}
+                    animate={{ opacity: 1, y: 0, rotate: rotation }}
+                    transition={{ duration: 0.6, delay: i * 0.1, ease: [0.25, 0.1, 0.25, 1] }}
+                    className="w-28 md:w-36"
+                    style={{
+                      boxShadow: `0 8px 30px ${isDark ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.15)'}, 0 2px 8px ${isDark ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.08)'}`,
+                    }}
+                  >
+                    <div
+                      className="p-2"
+                      style={{
+                        backgroundColor: isDark ? 'rgba(255,255,255,0.9)' : '#fff',
+                        boxShadow: `inset 0 0 0 1px rgba(0,0,0,0.05)`,
+                      }}
+                    >
+                      <img
+                        src={photo.preview}
+                        alt=""
+                        className="w-full aspect-square object-cover"
+                      />
+                    </div>
+                  </motion.div>
+                )
+              })}
             </div>
 
-            {/* Narrative with typewriter */}
-            <div className="min-h-[120px]">
-              {currentChapter.narrative ? (
-                <NarrativeBlock text={currentChapter.narrative.text} fontFamily={theme.font.heading} />
-              ) : currentChapter.generatingNarrative ? (
-                <p className="animate-pulse text-sm" style={{ color: isDark ? 'rgba(255,255,255,0.3)' : theme.colors.textMuted }}>
-                  记忆正在浮现...
-                </p>
-              ) : null}
-            </div>
-
-            {currentChapter.photos[0]?.analysis && (
-              <div className="text-sm opacity-50" style={{ fontFamily: theme.font.body }}>
-                {currentChapter.photos[0].analysis.location_guess} · {currentChapter.photos[0].analysis.time_of_day}
+            {/* Narrative with glass card container */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              className="rounded-2xl p-6 md:p-8"
+              style={{
+                backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.6)',
+                backdropFilter: 'blur(24px) saturate(120%)',
+                WebkitBackdropFilter: 'blur(24px) saturate(120%)',
+                border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}`,
+              }}
+            >
+              <div className="min-h-[120px]">
+                {currentChapter.narrative ? (
+                  <NarrativeBlock text={currentChapter.narrative.text} fontFamily={theme.font.heading} />
+                ) : currentChapter.generatingNarrative ? (
+                  <p className="animate-pulse text-sm" style={{ color: isDark ? 'rgba(255,255,255,0.3)' : theme.colors.textMuted }}>
+                    记忆正在浮现...
+                  </p>
+                ) : null}
               </div>
-            )}
+
+              {currentChapter.photos[0]?.analysis && (
+                <div className="text-sm mt-4 opacity-50" style={{ fontFamily: theme.font.body }}>
+                  {currentChapter.photos[0].analysis.location_guess} · {currentChapter.photos[0].analysis.time_of_day}
+                </div>
+              )}
+            </motion.div>
           </div>
         )}
 

@@ -15,13 +15,21 @@ export function SharePage() {
   const isDark = style === 'cyber'
 
   useEffect(() => {
+    if (chapters.length === 0) return
+
+    // Generate a stable dedup key from style + chapter titles + narrative lengths
+    const dedupKey = [
+      style,
+      ...chapters.map((ch) => `${ch.title}:${(ch.narrative?.text?.length ?? 0)}`),
+    ].join('|')
+
     const existing = useAppStore.getState().history.some(
-      (h) => h.id === chapters[0]?.id
+      (h) => h.id === dedupKey
     )
-    if (existing || chapters.length === 0) return
+    if (existing) return
 
     const entry: HistoryEntry = {
-      id: `hist-${Date.now()}`,
+      id: dedupKey,
       createdAt: new Date().toISOString(),
       style,
       chapterCount: chapters.length,

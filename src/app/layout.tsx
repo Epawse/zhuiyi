@@ -26,6 +26,7 @@ const notoSerif = Noto_Serif_SC({
   weight: ['400', '500', '600', '700'],
   variable: '--font-noto-serif',
   display: 'swap',
+  preload: false,
 })
 
 const jetbrainsMono = JetBrains_Mono({
