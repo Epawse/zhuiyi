@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { AppState, PhotoFile, PhotoChapter, StyleType, HistoryEntry } from '@/types'
+import { AppState, PhotoFile, PhotoChapter, StyleType, HistoryEntry, JourneySummary } from '@/types'
 
 const HISTORY_KEY = 'zhuiyi-history'
 const MAX_HISTORY = 20
@@ -67,6 +67,11 @@ interface AppStore {
   customStylePrompt: string
   setCustomStylePrompt: (prompt: string) => void
 
+  summary: JourneySummary | null
+  setSummary: (summary: JourneySummary | null) => void
+  generatingSummary: boolean
+  setGeneratingSummary: (v: boolean) => void
+
   history: HistoryEntry[]
   addHistory: (entry: HistoryEntry) => void
   clearHistory: () => void
@@ -83,6 +88,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
   generatingCover: false,
   style: 'ancient' as StyleType,
   customStylePrompt: '',
+  summary: null as JourneySummary | null,
+  generatingSummary: false,
   history: [] as HistoryEntry[],
 
   setState: (state) => {
@@ -108,8 +115,14 @@ export const useAppStore = create<AppStore>((set, get) => ({
   setStyle: (style) => set({ style }),
   setCustomStylePrompt: (prompt) => set({ customStylePrompt: prompt }),
 
+  setSummary: (summary) => set({ summary }),
+  setGeneratingSummary: (v) => set({ generatingSummary: v }),
+
   addHistory: (entry) => {
-    const history = [entry, ...get().history].slice(0, MAX_HISTORY)
+    const current = get().history
+    // Dedup check: skip if entry with same id already exists
+    if (current.some((h) => h.id === entry.id)) return
+    const history = [entry, ...current].slice(0, MAX_HISTORY)
     saveHistory(history)
     set({ history })
   },
@@ -133,15 +146,15 @@ export const useAppStore = create<AppStore>((set, get) => ({
     coverImage: null,
     generatingCover: false,
     customStylePrompt: '',
+    summary: null,
+    generatingSummary: false,
     history: get().history,
   }),
 }))
 
 if (typeof window !== 'undefined') {
-  // Hydrate from localStorage + hash on load
-  requestAnimationFrame(() => {
-    useAppStore.getState().hydrate()
-  })
+  // Hydrate from localStorage immediately (not deferred)
+  useAppStore.getState().hydrate()
 
   // Listen for back/forward navigation
   window.addEventListener('hashchange', () => {

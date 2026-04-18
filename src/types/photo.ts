@@ -48,6 +48,11 @@ export interface ChapterNarrative {
   style: StyleType
 }
 
+export interface JourneySummary {
+  text: string
+  style: StyleType
+}
+
 export interface HistoryEntry {
   id: string
   createdAt: string
@@ -56,4 +61,5 @@ export interface HistoryEntry {
   chapterSummaries: { title: string; location: string; narrativePreview: string }[]
   coverImage?: string | null
   narratives?: { title: string; text: string }[]
+  summary?: string
 }

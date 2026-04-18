@@ -14,10 +14,14 @@ export function SharePage() {
   const theme = STYLES[style]
   const isDark = style === 'cyber'
 
+  const coverImage = useAppStore((s) => s.coverImage)
+  const summary = useAppStore((s) => s.summary)
+
   useEffect(() => {
     if (chapters.length === 0) return
+    // Wait for at least one narrative to be ready
+    if (!chapters.some((ch) => ch.narrative)) return
 
-    // Generate a stable dedup key from style + chapter titles + narrative lengths
     const dedupKey = [
       style,
       ...chapters.map((ch) => `${ch.title}:${(ch.narrative?.text?.length ?? 0)}`),
@@ -38,13 +42,14 @@ export function SharePage() {
         location: ch.photos[0]?.analysis?.location_guess || '未知地点',
         narrativePreview: ch.narrative?.text?.slice(0, 60) || '',
       })),
-      coverImage: useAppStore.getState().coverImage,
+      coverImage: coverImage,
       narratives: chapters
         .filter((ch) => ch.narrative)
         .map((ch) => ({ title: ch.title, text: ch.narrative!.text })),
+      summary: summary?.text || undefined,
     }
     addHistory(entry)
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [chapters, style, coverImage, summary, addHistory])
 
   const bgBase = isDark ? '#0a0a0f' : '#1a1a2e'
   const cardBg = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.06)'

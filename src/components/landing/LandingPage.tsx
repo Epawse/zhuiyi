@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { useAppStore } from '@/store/useAppStore'
 import { UploadArea } from './UploadArea'
@@ -42,10 +42,6 @@ export function LandingPage() {
   const history = useAppStore((s) => s.history)
   const clearHistory = useAppStore((s) => s.clearHistory)
   const [showHistory, setShowHistory] = useState(false)
-
-  useEffect(() => {
-    useAppStore.getState().hydrate()
-  }, [])
 
   const theme = STYLES[style]
 
@@ -256,6 +252,11 @@ function HistoryCard({ entry }: { entry: HistoryEntry }) {
     const store = useAppStore.getState()
     store.setStyle(entry.style)
     if (entry.coverImage) store.setCoverImage(entry.coverImage)
+
+    // Restore summary if available
+    if (entry.summary) {
+      store.setSummary({ text: entry.summary, style: entry.style })
+    }
 
     // Restore chapters with narratives if available
     if (entry.narratives && entry.narratives.length > 0) {
