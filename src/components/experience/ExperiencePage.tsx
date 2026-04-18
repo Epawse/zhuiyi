@@ -275,22 +275,37 @@ function MemoryScroll({ chapters, style, summary, coverImage }: {
                 {chapter.title}
               </h3>
 
-              {/* Photo strip — larger */}
+              {/* Photos — editorial layout */}
               {chapter.photos.length > 0 && (
-                <div className="flex gap-2.5 mb-4 overflow-x-auto pb-2" style={{ marginLeft: '-4px', paddingLeft: '4px', paddingRight: '4px' }}>
-                  {chapter.photos.slice(0, 5).map((photo, pi) => (
-                    <div
-                      key={photo.id}
-                      className="flex-shrink-0 rounded-xl overflow-hidden"
-                      style={{
-                        width: pi === 0 ? '140px' : '100px',
-                        aspectRatio: pi === 0 ? '4/5' : '3/4',
-                        boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
-                      }}
-                    >
-                      <img src={photo.preview} alt="" className="w-full h-full object-cover" />
+                <div className="mb-4">
+                  {/* First photo — large, full width */}
+                  <div
+                    className="rounded-2xl overflow-hidden mb-2"
+                    style={{
+                      aspectRatio: '16/10',
+                      boxShadow: '0 12px 40px rgba(0,0,0,0.35)',
+                    }}
+                  >
+                    <img src={chapter.photos[0].preview} alt="" className="w-full h-full object-cover" />
+                  </div>
+                  {/* Remaining photos — horizontal strip */}
+                  {chapter.photos.length > 1 && (
+                    <div className="flex gap-2 overflow-x-auto pb-1">
+                      {chapter.photos.slice(1, 6).map((photo) => (
+                        <div
+                          key={photo.id}
+                          className="flex-shrink-0 rounded-xl overflow-hidden"
+                          style={{
+                            width: '100px',
+                            aspectRatio: '3/4',
+                            boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+                          }}
+                        >
+                          <img src={photo.preview} alt="" className="w-full h-full object-cover" />
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  )}
                 </div>
               )}
 
