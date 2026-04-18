@@ -2,7 +2,8 @@
 
 import { useAppStore } from '@/store/useAppStore'
 import { STYLES } from '@/types/style'
-import { useEffect, useRef, useState } from 'react'
+import { fetchWithTimeout } from '@/lib/fetch'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { StyleType, PhotoChapter, JourneySummary } from '@/types'
 
@@ -178,8 +179,9 @@ function PhotoFlow({ chapters, style }: { chapters: PhotoChapter[]; style: Style
 }
 
 // === MEMORY SCROLL MODE ===
-function MemoryScroll({ chapters, style, summary, coverImage }: {
+function MemoryScroll({ chapters, style, summary, coverImage, onRetryNarrative }: {
   chapters: PhotoChapter[]; style: StyleType; summary: JourneySummary | null; coverImage: string | null
+  onRetryNarrative: (chapter: PhotoChapter) => void
 }) {
   const theme = STYLES[style]
   const isDark = style === 'cyber'
@@ -332,6 +334,27 @@ function MemoryScroll({ chapters, style, summary, coverImage }: {
                   <p className="animate-pulse text-sm" style={{ color: isDark ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.35)' }}>
                     叙事浮现中...
                   </p>
+                </div>
+              )}
+
+              {!chapter.narrative && !chapter.generatingNarrative && (
+                <div className="rounded-2xl p-4" style={{
+                  backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.05)',
+                  border: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.08)'}`,
+                }}>
+                  <p className="text-sm mb-2" style={{ color: isDark ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.35)' }}>
+                    叙事生成失败
+                  </p>
+                  <button
+                    onClick={() => onRetryNarrative(chapter)}
+                    className="text-xs px-3 py-1 rounded-full transition-all hover:scale-105"
+                    style={{
+                      backgroundColor: theme.colors.accent,
+                      color: '#fff',
+                    }}
+                  >
+                    重试
+                  </button>
                 </div>
               )}
             </motion.div>
@@ -731,6 +754,47 @@ export function ExperiencePage() {
   const theme = STYLES[style]
   const isDark = style === 'cyber'
 
+  const generateNarrative = useCallback((chapter: PhotoChapter) => {
+    updateChapter(chapter.id, { generatingNarrative: true })
+
+    fetchWithTimeout('/api/narrate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        analyses: chapter.photos.map((p) => p.analysis).filter(Boolean),
+        style,
+        customStylePrompt: style === 'custom' ? useAppStore.getState().customStylePrompt : undefined,
+      }),
+    }, 60000)
+      .then(async (res) => {
+        const reader = res.body?.getReader()
+        if (!reader) throw new Error('No response body')
+        let text = ''
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          const chunk = new TextDecoder().decode(value)
+          for (const line of chunk.split('\n')) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6)
+              if (data === '[DONE]') break
+              try {
+                const parsed = JSON.parse(data)
+                text += parsed.text || ''
+              } catch {}
+            }
+          }
+        }
+        updateChapter(chapter.id, {
+          narrative: { text, style },
+          generatingNarrative: false,
+        })
+      })
+      .catch(() => {
+        updateChapter(chapter.id, { generatingNarrative: false })
+      })
+  }, [style, updateChapter])
+
   // Generate narratives for chapters
   useEffect(() => {
     chapters.forEach((chapter) => {
@@ -738,45 +802,9 @@ export function ExperiencePage() {
       if (chapter.narrative) return
 
       narrativeStarted.current.add(chapter.id)
-      updateChapter(chapter.id, { generatingNarrative: true })
-
-      fetch('/api/narrate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          analyses: chapter.photos.map((p) => p.analysis).filter(Boolean),
-          style,
-        }),
-      })
-        .then(async (res) => {
-          const reader = res.body?.getReader()
-          if (!reader) return
-          let text = ''
-          while (true) {
-            const { done, value } = await reader.read()
-            if (done) break
-            const chunk = new TextDecoder().decode(value)
-            for (const line of chunk.split('\n')) {
-              if (line.startsWith('data: ')) {
-                const data = line.slice(6)
-                if (data === '[DONE]') break
-                try {
-                  const parsed = JSON.parse(data)
-                  text += parsed.text || ''
-                } catch {}
-              }
-            }
-          }
-          updateChapter(chapter.id, {
-            narrative: { text, style },
-            generatingNarrative: false,
-          })
-        })
-        .catch(() => {
-          updateChapter(chapter.id, { generatingNarrative: false })
-        })
+      generateNarrative(chapter)
     })
-  }, [chapters, style, updateChapter])
+  }, [chapters, style, updateChapter, generateNarrative])
 
   // Generate cover image
   useEffect(() => {
@@ -961,7 +989,7 @@ export function ExperiencePage() {
         )}
         {viewMode === 'scroll' && (
           <motion.div key="scroll" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }} className="min-h-screen">
-            <MemoryScroll chapters={chapters} style={style} summary={summary} coverImage={coverImage} />
+            <MemoryScroll chapters={chapters} style={style} summary={summary} coverImage={coverImage} onRetryNarrative={generateNarrative} />
           </motion.div>
         )}
         {viewMode === 'map' && (

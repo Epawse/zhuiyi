@@ -5,7 +5,7 @@ export function buildAnalyzePrompt(exif: PhotoExif | null): string {
   const locationHint = hasGps
     ? `GPS坐标: ${exif.latitude}, ${exif.longitude}
 重要：GPS坐标已提供，请基于坐标确认具体地点名称（城市+地标），不要忽略GPS信息。`
-    : 'GPS坐标: 缺失，请根据画面内容推断地点'
+    : `GPS坐标: 缺失。请仔细观察画面中的地标建筑、自然景观、文字标识、文化元素等，尽可能推断具体地点（城市+地标名称）。如果无法确定，给出最可能的地点并标注"推断"。严禁返回"未知地点"，必须给出你的最佳推断。`
 
   const timeHint = exif?.datetime
     ? `拍摄时间: ${exif.datetime}
@@ -40,6 +40,21 @@ export function buildNarratePrompt(
     .map((a, i) => `照片${i + 1}: ${a.scene}，${a.location_guess}，${a.activity}，${a.notable_detail}`)
     .join('\n')
 
-  const prompt = customStylePrompt || stylePrompt
-  return prompt.replace('{photoInfo}', photoInfo)
+  if (customStylePrompt) {
+    return `你是一位风格独特的叙事者。请按照以下风格描述来书写这段记忆旅程。
+
+风格要求：${customStylePrompt}
+
+规则：
+- 严格遵循上述风格描述的语气、用词和行文方式
+- 从照片信息中提取关键细节融入叙事
+- 控制在200字以内
+
+照片信息：
+${photoInfo}
+
+请为这组照片撰写一段叙事。`
+  }
+
+  return stylePrompt.replace('{photoInfo}', photoInfo)
 }

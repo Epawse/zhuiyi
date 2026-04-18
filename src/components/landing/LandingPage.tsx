@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useAppStore } from '@/store/useAppStore'
 import { UploadArea } from './UploadArea'
 import { STYLES } from '@/types/style'
@@ -41,6 +41,8 @@ export function LandingPage() {
   const style = useAppStore((s) => s.style)
   const history = useAppStore((s) => s.history)
   const clearHistory = useAppStore((s) => s.clearHistory)
+  const customStylePrompt = useAppStore((s) => s.customStylePrompt)
+  const setCustomStylePrompt = useAppStore((s) => s.setCustomStylePrompt)
   const [showHistory, setShowHistory] = useState(false)
 
   const theme = STYLES[style]
@@ -225,6 +227,41 @@ export function LandingPage() {
             )
           })}
         </motion.div>
+
+        {/* Custom style prompt textarea */}
+        <AnimatePresence>
+          {style === 'custom' && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+              className="mt-4 w-full max-w-lg overflow-hidden"
+            >
+              <textarea
+                value={customStylePrompt}
+                onChange={(e) => setCustomStylePrompt(e.target.value)}
+                placeholder="描述你想要的风格，如：像海子的诗、像村上春树的散文、像宫崎骏的动画旁白..."
+                className="w-full px-4 py-3 rounded-xl text-sm resize-none transition-colors"
+                rows={3}
+                style={{
+                  backgroundColor: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  color: 'rgba(255,255,255,0.8)',
+                  backdropFilter: 'blur(20px)',
+                  outline: 'none',
+                  fontFamily: '"Noto Serif SC", Georgia, serif',
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'
+                }}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Hint text */}
         <motion.p

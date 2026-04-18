@@ -5,6 +5,19 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useAppStore } from '@/store/useAppStore'
 import { STYLES } from '@/types/style'
 import { clusterPhotos } from '@/lib/photo/cluster'
+import { fetchWithTimeout } from '@/lib/fetch'
+
+const FAILED_ANALYSIS = {
+  scene: '未识别场景',
+  location_guess: '推断中',
+  mood: [],
+  season: 'spring',
+  time_of_day: 'afternoon',
+  activity: '未知',
+  key_objects: [],
+  notable_detail: '分析失败',
+  confidence: 'low' as const,
+}
 
 export function ProcessingPage() {
   const photos = useAppStore((s) => s.photos)
@@ -17,96 +30,72 @@ export function ProcessingPage() {
   const theme = STYLES[style]
   const isDark = style === 'cyber'
 
-  useEffect(() => {
-    const analyzeAll = async () => {
-      const currentPhotos = useAppStore.getState().photos
-      let failCount = 0
+  const analyzeAll = async () => {
+    setErrorMsg('')
+    const currentPhotos = useAppStore.getState().photos
+    let failCount = 0
 
-      for (let i = 0; i < currentPhotos.length; i++) {
-        const photo = currentPhotos[i]
-        setProgress(i + 1)
-        useAppStore.getState().updatePhoto(photo.id, { analyzing: true })
+    for (let i = 0; i < currentPhotos.length; i++) {
+      const photo = currentPhotos[i]
+      setProgress(i + 1)
+      useAppStore.getState().updatePhoto(photo.id, { analyzing: true })
 
-        try {
-          const res = await fetch('/api/analyze', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              image: photo.preview,
-              exif: photo.exif,
-            }),
-          })
-          const analysis = await res.json()
+      try {
+        const res = await fetchWithTimeout('/api/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            image: photo.preview,
+            exif: photo.exif,
+          }),
+        }, 30000)
+        const analysis = await res.json()
 
-          if (analysis.error) {
-            failCount++
-            useAppStore.getState().updatePhoto(photo.id, {
-              analyzing: false,
-              analysis: {
-                scene: '未识别场景',
-                location_guess: '未知地点',
-                mood: [],
-                season: 'spring',
-                time_of_day: 'afternoon',
-                activity: '未知',
-                key_objects: [],
-                notable_detail: '分析失败',
-                confidence: 'low',
-              },
-            })
-          } else {
-            useAppStore.getState().updatePhoto(photo.id, { analysis, analyzing: false })
-          }
-        } catch (err) {
+        if (analysis.error) {
           failCount++
           useAppStore.getState().updatePhoto(photo.id, {
             analyzing: false,
-            analysis: {
-              scene: '未识别场景',
-              location_guess: '未知地点',
-              mood: [],
-              season: 'spring',
-              time_of_day: 'afternoon',
-              activity: '未知',
-              key_objects: [],
-              notable_detail: '分析失败',
-              confidence: 'low',
-            },
+            analysis: FAILED_ANALYSIS,
           })
+        } else {
+          useAppStore.getState().updatePhoto(photo.id, { analysis, analyzing: false })
         }
+      } catch (err) {
+        failCount++
+        useAppStore.getState().updatePhoto(photo.id, {
+          analyzing: false,
+          analysis: FAILED_ANALYSIS,
+        })
       }
-
-      if (failCount === currentPhotos.length) {
-        setErrorMsg('所有照片分析失败，请重试')
-        return
-      }
-
-      const updatedPhotos = useAppStore.getState().photos
-      const chapters = clusterPhotos(updatedPhotos)
-      setChapters(chapters)
-      setState('experience')
     }
 
+    if (failCount === currentPhotos.length) {
+      setErrorMsg('所有照片分析失败，请检查网络后重试')
+      return
+    }
+
+    const updatedPhotos = useAppStore.getState().photos
+    const chapters = clusterPhotos(updatedPhotos)
+    setChapters(chapters)
+    setState('experience')
+  }
+
+  useEffect(() => {
     analyzeAll()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const analyzed = photos.filter((p) => p.analysis).length
   const pct = photos.length > 0 ? Math.round((analyzed / photos.length) * 100) : 0
 
-  // Current photo being analyzed (first analyzing photo, or last analyzed)
   const analyzing = photos.find((p) => p.analyzing && !p.analysis)
   const currentPhoto = analyzing || photos.filter((p) => p.analysis).slice(-1)[0] || photos[0]
 
-  // Background photo: use the one being analyzed, or most recently completed
   const bgPhoto = analyzing?.preview
-    || photos.filter((p) => p.analysis).slice(-1)[0]?.preview
-    || photos[0]?.preview
     || photos.filter((p) => p.analysis).slice(-1)[0]?.preview
     || photos[0]?.preview
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* === FULL-BLEED BACKGROUND — current photo with blur/desaturation === */}
       <AnimatePresence mode="wait">
         {bgPhoto && (
           <motion.div
@@ -126,12 +115,10 @@ export function ProcessingPage() {
                 transform: 'scale(1.08)',
               }}
             />
-            {/* Dark overlay */}
             <div
               className="absolute inset-0"
               style={{ backgroundColor: isDark ? 'rgba(0,0,0,0.55)' : 'rgba(0,0,0,0.45)' }}
             />
-            {/* Accent glow from theme */}
             <div
               className="absolute inset-0 opacity-[0.08]"
               style={{
@@ -142,7 +129,6 @@ export function ProcessingPage() {
         )}
       </AnimatePresence>
 
-      {/* Fallback solid bg if no photo */}
       {!bgPhoto && (
         <div
           className="fixed inset-0 z-0"
@@ -150,7 +136,6 @@ export function ProcessingPage() {
         />
       )}
 
-      {/* === CONTENT === */}
       <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -158,7 +143,6 @@ export function ProcessingPage() {
           transition={{ duration: 0.8 }}
           className="flex flex-col items-center"
         >
-          {/* Current photo — large, with frosted glass frame */}
           <AnimatePresence mode="wait">
             {currentPhoto && (
               <motion.div
@@ -177,11 +161,9 @@ export function ProcessingPage() {
                   alt=""
                   className="w-full h-full object-cover"
                 />
-                {/* Analyzing shimmer overlay */}
                 {!currentPhoto.analysis && (
                   <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent animate-pulse" />
                 )}
-                {/* Completed check mark */}
                 {currentPhoto.analysis && (
                   <motion.div
                     initial={{ scale: 0 }}
@@ -202,7 +184,6 @@ export function ProcessingPage() {
             )}
           </AnimatePresence>
 
-          {/* Title */}
           <h2
             className="text-2xl md:text-3xl mb-2 text-center"
             style={{
@@ -210,11 +191,10 @@ export function ProcessingPage() {
               color: isDark ? '#E0E0E0' : '#F5F0E8',
             }}
           >
-            正在唤醒记忆
+            {errorMsg ? '分析未完成' : '正在唤醒记忆'}
           </h2>
 
-          {/* Subtitle — analysis info */}
-          {currentPhoto?.analysis && (
+          {currentPhoto?.analysis && !errorMsg && (
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -227,7 +207,7 @@ export function ProcessingPage() {
               {currentPhoto.analysis.location_guess} · {currentPhoto.analysis.time_of_day}
             </motion.p>
           )}
-          {!currentPhoto?.analysis && (
+          {!currentPhoto?.analysis && !errorMsg && (
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -241,7 +221,6 @@ export function ProcessingPage() {
             </motion.p>
           )}
 
-          {/* Photo filmstrip — subtle row at bottom */}
           <div className="flex gap-2 mb-8 overflow-x-auto px-2 max-w-xs">
             {photos.map((photo, i) => (
               <motion.div
@@ -263,47 +242,67 @@ export function ProcessingPage() {
                   src={photo.preview}
                   alt=""
                   className="w-full h-full object-cover"
-                  style={{
-                    opacity: photo.analysis ? 1 : 0.5,
-                  }}
+                  style={{ opacity: photo.analysis ? 1 : 0.5 }}
                 />
               </motion.div>
             ))}
           </div>
 
-          {/* Progress bar — slim, elegant */}
-          <div
-            className="w-52 h-[3px] rounded-full overflow-hidden mb-3"
-            style={{ backgroundColor: 'rgba(255,255,255,0.06)' }}
-          >
-            <motion.div
-              className="h-full rounded-full"
-              style={{
-                background: `linear-gradient(90deg, ${theme.colors.accent}, ${theme.colors.secondary || theme.colors.accent})`,
-              }}
-              initial={{ width: 0 }}
-              animate={{ width: `${pct}%` }}
-              transition={{ duration: 0.5 }}
-            />
-          </div>
-
-          <p
-            className="text-xs tracking-widest"
-            style={{
-              color: isDark ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.3)',
-            }}
-          >
-            {analyzed} / {photos.length}
-          </p>
+          {!errorMsg && (
+            <>
+              <div
+                className="w-52 h-[3px] rounded-full overflow-hidden mb-3"
+                style={{ backgroundColor: 'rgba(255,255,255,0.06)' }}
+              >
+                <motion.div
+                  className="h-full rounded-full"
+                  style={{
+                    background: `linear-gradient(90deg, ${theme.colors.accent}, ${theme.colors.secondary || theme.colors.accent})`,
+                  }}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${pct}%` }}
+                  transition={{ duration: 0.5 }}
+                />
+              </div>
+              <p
+                className="text-xs tracking-widest"
+                style={{ color: isDark ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.3)' }}
+              >
+                {analyzed} / {photos.length}
+              </p>
+            </>
+          )}
 
           {errorMsg && (
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-red-400 text-sm mt-4"
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex flex-col items-center gap-4 mt-2"
             >
-              {errorMsg}
-            </motion.p>
+              <p className="text-red-400 text-sm">{errorMsg}</p>
+              <div className="flex gap-3">
+                <button
+                  onClick={analyzeAll}
+                  className="px-5 py-2 rounded-full text-sm font-medium text-white transition-all hover:scale-105 active:scale-95"
+                  style={{
+                    backgroundColor: theme.colors.accent,
+                    boxShadow: `0 4px 20px ${theme.colors.accent}25`,
+                  }}
+                >
+                  重试
+                </button>
+                <button
+                  onClick={() => useAppStore.getState().setState('landing')}
+                  className="px-5 py-2 rounded-full text-sm transition-all hover:scale-105 active:scale-95"
+                  style={{
+                    border: `1px solid ${isDark ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.15)'}`,
+                    color: isDark ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.6)',
+                  }}
+                >
+                  返回首页
+                </button>
+              </div>
+            </motion.div>
           )}
         </motion.div>
       </div>

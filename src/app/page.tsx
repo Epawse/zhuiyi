@@ -5,6 +5,7 @@ import { LandingPage } from '@/components/landing/LandingPage'
 import { ProcessingPage } from '@/components/processing/ProcessingPage'
 import { ExperiencePage } from '@/components/experience/ExperiencePage'
 import { SharePage } from '@/components/share/SharePage'
+import { ErrorBoundary } from '@/components/common/ErrorBoundary'
 import { AnimatePresence, motion } from 'framer-motion'
 
 const pageVariants = {
@@ -18,6 +19,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen">
+      <ErrorBoundary>
       <AnimatePresence mode="wait">
         {appState === 'landing' && (
           <motion.div key="landing" variants={pageVariants} initial="initial" animate="animate" exit="exit">
@@ -40,6 +42,7 @@ export default function Home() {
           </motion.div>
         )}
       </AnimatePresence>
+      </ErrorBoundary>
     </main>
   )
 }
