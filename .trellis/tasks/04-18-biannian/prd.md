@@ -55,12 +55,15 @@
 - [ ] **AI风格系统**：用户可选择叙事风格，AI据此生成不同语感的文字
   - 预设风格至少3种（如：古风编年、追忆似水年华、赛博朋克）
   - 用户可自由输入风格描述（如"像海子的诗"、"像村上春树的小说"）
-- [ ] 风格适配视觉：不同风格至少影响字体、配色、动画过渡的细微差别
+- [ ] 风格主题系统：不同风格切换完整视觉主题（配色、字体、动画、地图样式）
+- [ ] AI生成风格背景：用Google AI Studio Gemini图片生成能力为每种风格生成主题背景图（需代理）
+- [ ] 篇章场景图：每篇章选取代表性照片(3-5张)+风减述 → gemini-3.1-flash-image-preview多参考图模式生成场景插画
 
 ### P1 - 增强体验（hackathon尽量做）
 
 - [ ] 照片自动归类（按时间+地点+场景聚类为"篇章"）
 - [ ] "篇章"结构：时间线自动分为若干篇章，每个篇章有标题
+- [ ] **篇章场景图**：每篇章用照片+风减述生成1张AI场景插画（gemini-3.1-flash-image-preview，多参考图模式）
 - [ ] 情感/氛围感知（从照片推断情绪，融入叙事）
 - [ ] 分享页生成（可截图的精美页面，风格与叙事一致，适合发抖音）
 - [ ] 更多预设风格（日记体、科幻体、武侠体、散文诗体...）
@@ -113,7 +116,10 @@
 | 地图 | 高德地图 JS API 2.0 | 中国GCJ-02坐标，免费额度 |
 | EXIF | exifr | 浏览器端，成熟稳定 |
 | 动画 | Framer Motion | 时间线播放、照片浮现 |
-| AI | Gemini 3 Flash Preview (Ollama Cloud) | 图片理解+文本生成+风格适配，OpenAI兼容格式，中国大陆可达 |
+| AI | Gemini 3 Flash Preview (Ollama Cloud) | 文本+Vision理解，OpenAI兼容格式，中国大陆可达 |
+| AI图片生成 | ❌ 不可用 | Ollama Cloud无图片生成端点，Gemini仅返回工具调用JSON |
+| AI图片生成 | ✅ Google AI Studio (需代理) | gemini-3.1-flash-image-preview，3种风格背景已验证通过 |
+| 状态管理 | Zustand | 轻量，跨平台可复用 |
 | 状态管理 | Zustand | 轻量，跨平台可复用 |
 | 存储 | IndexedDB | 客户端，hackathon足够 |
 | AI SDK | openai (npm) | OpenAI兼容格式，Ollama Cloud适配 |
@@ -132,6 +138,31 @@
 ```
 
 风格是AI能力的核心展现——不是UI皮肤切换，是AI对不同文学/叙事传统的理解和再创造。
+
+### 风格视觉主题映射
+
+| 风格 | 主色 | 字体 | 地图样式 | 动画 | AI背景风格 |
+|------|------|------|---------|------|-----------|
+| 古风编年 | 宣纸色#F5F0E8 + 墨色#2C2C2C + 朱红#C41A16 | 楷体/宋体 | 极简灰/水墨风 | 水墨晕染 | 水墨山水、宣纸纹理 |
+| 追忆似水年华 | 暖棕#D4A574 + 米白#FAF8F5 + 深褐#5C3D2E | 衬线体 | 暖色调 | 淡入淡出 | 复古暖调、老照片质感 |
+| 赛博朋克 | 黑#0A0A0A + 霓虹青#00FFD4 + 品红#FF0066 | 等宽/无衬线 | 暗色+发光 | 闪烁/扫描线 | 霓虹城市、数据流 |
+
+自定义风格：用户输入描述 → Gemini同时生成叙事prompt + 建议配色方案(JSON) + 风格背景图 + 篇章场景图
+
+### 篇章场景图架构
+
+```
+照片聚类为篇章（3-5张/篇章）
+  ↓
+每篇章选取代表照片(3-5张) + 风格描述
+  ↓
+gemini-3.1-flash-image-preview 多参考图模式
+  ↓
+生成1张场景插画（文+图→图）
+古风：水墨长卷   追忆：印象主义暖调   赛博：霓虹城景
+```
+
+场景图是"记忆复苏"体验的关键——不只是文字变了，照片本身也融入了风格化的场景，形成完整叙事。
 
 ### 风格示例
 
@@ -152,15 +183,17 @@
 5. 风格prompt需要调教，保证输出质量稳定
 6. ~~Ollama Cloud Pro的API endpoint和鉴权方式需确认~~ ✅ 已确认（OpenAI兼容格式，已测试通过）
 7. 照片压缩：上传前压缩到合理大小避免API超时
-8. Ollama Cloud API Key需保存在环境变量，不能提交到Git
 9. gemini-3-flash-preview的reasoning字段会消耗token，需考虑是否显示/隐藏
 10. HEIC格式照片需浏览器端转换（demo照片为HEIC格式）
+11. Google AI Studio gemini-3.1-flash-image-preview 支持图片生成（需代理，已验证），REST API参考见brainstorm/gemini-image-api-reference.md
+12. 风格背景图=AI实时生成（Google AI Studio，需代理）；若代理不可用降级为CSS主题+预制背景
+13. gemini-3.1-flash-image-preview 还支持文+图→图（照片风格化），作为P1功能
 
 ### API 测试验证结论（2026-04-18）
 
 | API通道 | 状态 | 用途 |
 |--------|------|------|
-| Ollama Cloud gemini-3-flash-preview | ✅ 完全可用 | Vision+叙事（主力）|
+| Ollama Cloud gemini-3-flash-preview | ✅ 完全可用 | 文本+Vision理解（主力），不支持图片生成 |
 | Ollama Cloud qwen3-vl:235b-instruct | ✅ 可用 | Vision备选 |
 | Ollama Cloud qwen3.5:397b | ✅ 可用 | 纯文本备选（无vision，thinking慢）|
 | Ollama Cloud glm-5.1 | ✅ 可用 | 中文备选（无vision）|
@@ -175,6 +208,24 @@
 切换到Ollama Cloud qwen3-vl
   ↓ 仍然失败
 本地预生成JSON（完全离线降级）
+```
+
+**图片生成策略**：
+```
+Google AI Studio gemini-3.1-flash-image-preview (需要代理)
+  ↓ 代理不可用或API失败
+降级为CSS主题+预制背景图
+```
+
+**场景图生成流程**：
+```
+Phase 1: 信息提取（逐张）
+Phase 2: 叙事生成（批量streaming）
+Phase 2.5: 篇章聚类 → 篇章场景图生成（每篇章1张，多参考图+风减述）
+  ↓ 每张图15-40s，可并行或串行展示
+古风：照片+水墨山水的prompt → 水墨长卷场景
+追忆：照片+印象主义prompt → 暖调印象场景
+赛博：照片+霓虹城市prompt → 霓虹数据流场景
 ```
 
 **关键发现**：
@@ -253,11 +304,33 @@ AI体验赛道完美契合：
 **Consequences**: 
 - 使用`openai` npm包，baselineURL指向Ollama Cloud
 - 模型名：`gemini-3-flash-preview`（主力），`qwen3-vl:235b-instruct`（vision备选），`qwen3.5:397b`（纯文本备选）
-- API Key从环境变量`OLLAMA_API_KEY`读取
-- 降级链：gemini-3-flash → qwen3-vl → 本地预生成JSON
+- 图片生成模型：gemini-3.1-flash-image-preview（唯一）
+- API Key从环境变量`OLLAMA_API_KEY`读取，Google AI Studio Key从`GOOGLE_AI_API_KEY`读取
+- 降级链（文本）：gemini-3-flash → qwen3-vl → 本地预生成JSON
+- 图片生成模型：gemini-3.1-flash-image-preview（唯一，不使用pro版本）
 
 ### D10: Demo照片格式
 
 **Context**: 准备了5张HEIC格式照片用于demo演示
 **Decision**: 使用temp-pictures目录中的5张HEIC照片作为demo数据，前端需支持HEIC→JPEG转换
 **Consequences**: 需要在上传流程中加入HEIC格式转换（使用heic2any库），确保demo流程顺畅
+
+### D11: 风格视觉方案
+
+**Context**: 需要确定风格系统的视觉深度——仅CSS主题切换，还是包含AI生成的图片
+**Decision**: CSS主题 + AI生成风格背景图 + AI生成篇章场景插画的完整视觉方案
+**Consequences**: 
+- CSS主题切换（配色/字体/动画/地图样式）仍然实现
+- 风格背景图通过Google AI Studio gemini-3.1-flash-image-preview实时生成（需代理）
+- 篇章场景图：每篇章选3-5张代表照片+风减述→多参考图模式生成场景插画（P0）
+- 若代理不可用，降级为CSS主题+预制背景图
+
+### D12: 篇章场景图
+
+**Context**: 纯文字叙事的视觉冲击力有限，需要篇章级别的场景插画让"记忆复苏"体验完整
+**Decision**: 每个篇章生成1张AI场景插画（多参考图+风减述→文+图生图）
+**Consequences**: 
+- 使用gemini-3.1-flash-image-preview的"多参考图"能力（最多14张）
+- 每张场景图约15-40s生成，可串行展示增加"浮现"体验
+- 古风篇章→水墨长卷场景，追忆篇章→印象主义暖调场景，赛博篇章→霓虹城市场景
+- 开发量增加约1小时（新增1个API调用+场景图展示组件）
