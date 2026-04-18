@@ -15,12 +15,14 @@
 * 最佳赛道：AI体验（"刷到懂你的瞬间"）
 * 核心功能：照片上传 → EXIF/Vision提取时空信息 → 地图路线 → 时间线播放 → AI多风格叙事生成
 * 风格系统：AI驱动的风格引擎，用户选择风格后叙事语感和视觉氛围都跟着变，风格不局限于预设
-* AI模型：Gemini 3.1 Flash（Google AI Studio直连），可选扩展Gemini 3 Pro Image (nano banana pro)做风格化图片
-* API格式：Google AI SDK (@google/genai)，支持streaming
-* 图片风格化（扩展）：gemini-3.1-flash-image-preview 或 gemini-3-pro-image-preview
+* AI模型：Gemini 3 Flash Preview（Ollama Cloud代理），备选qwen3-vl、qwen3.5、glm-5.1
+* API通道：Ollama Cloud（OpenAI兼容格式），Google AI Studio直连在中国大陆不可用（已测试确认）
+* API格式：OpenAI SDK (`openai`)，baseURL=`https://ollama.com/v1`，支持streaming
+* 图片风格化（扩展）：暂无可用图片生成模型，hackathon阶段不做
 * 地图：高德地图 JS API 2.0（用户有GIS背景）
-* 技术栈方向：Next.js + 高德地图 + Gemini Pro API + exifr + Tailwind CSS + Framer Motion
+* 技术栈方向：Next.js + 高德地图 + Ollama Cloud (OpenAI兼容) + exifr + Tailwind CSS + Framer Motion
 * 部署：Vercel（一键部署，方便评委访问）
+* Demo照片：temp-pictures/目录，5张HEIC格式
 
 ## Assumptions (temporary)
 
@@ -41,7 +43,8 @@
 
 ### P0 - MVP（hackathon必做）
 
-- [ ] 照片上传（支持多张，拖拽或选择）
+- [ ] 照片上传（支持多张，拖拽或选择，支持HEIC格式转换）
+- [ ] 照片压缩（上传前压缩到合理大小，避免API超时）
 - [ ] EXIF提取（GPS坐标 + 拍摄时间）
 - [ ] GPS缺失时：Vision模型推断地点信息
 - [ ] 时间缺失时：使用文件修改时间或视觉推断季节
@@ -110,20 +113,22 @@
 | 地图 | 高德地图 JS API 2.0 | 中国GCJ-02坐标，免费额度 |
 | EXIF | exifr | 浏览器端，成熟稳定 |
 | 动画 | Framer Motion | 时间线播放、照片浮现 |
-| AI | Gemini 3.1 Flash (Google AI Studio直连) | 图片理解+文本生成+风格适配+长上下文，免费额度够hackathon用 |
+| AI | Gemini 3 Flash Preview (Ollama Cloud) | 图片理解+文本生成+风格适配，OpenAI兼容格式，中国大陆可达 |
 | 状态管理 | Zustand | 轻量，跨平台可复用 |
 | 存储 | IndexedDB | 客户端，hackathon足够 |
+| AI SDK | openai (npm) | OpenAI兼容格式，Ollama Cloud适配 |
+| 图片转换 | heic2any | HEIC→JPEG，iOS照片兼容 |
 | 部署 | Vercel | 一键部署 |
 
 ### 风格系统架构
 
 ```
-用户选择风格 → 风格Prompt模板 → Gemini Pro Vision API
-                                         ↓
-照片 + 时空信息 + 风格指令 → 生成对应风格的叙事文本
-                                         ↓
-                              前端根据风格渲染
-                              （字体、配色、动画微妙变化）
+用户选择风格 → 风格Prompt模板 → Ollama Cloud (OpenAI兼容格式)
+                                          ↓
+照片 + 时空信息 + 风格指令 → gemini-3-flash-preview 生成对应风格的叙事文本
+                                          ↓
+                               前端根据风格渲染
+                               （字体、配色、动画微妙变化）
 ```
 
 风格是AI能力的核心展现——不是UI皮肤切换，是AI对不同文学/叙事传统的理解和再创造。
@@ -132,9 +137,9 @@
 
 | 风格 | 同一张照片的输出 |
 |------|----------------|
-| 古风编年 | 甲辰年春，客居武汉。登黄鹤楼，江风浩荡，远望烟波。 |
-| 追忆似水年华 | 那天下午的武汉，空气里有热干面和长江的味道。你站在楼顶，风吹乱了所有计划。 |
-| 赛博朋克 | 2084.NE4 · WUHAN · 长江数据流过旧城节点，你站在第七层观景台，霓虹映在江面 |
+| 古风编年 | 甲辰仲春，岁在三月。余访江城，登临黄鹤古楼。适逢日薄西山…水面粼粼如散碎金 |
+| 追忆似水年华 | 三月武汉的江风，总是裹挟着一种半干不湿的泥土与铁锈的气息…碎金般的阳光费力地穿透云层 |
+| 赛博朋克 | TIMESTAMP: 2024.03 / LOC: WH-Sector. 云层缝隙裂开，240Hz夕阳强行切入…江面光栅过载 |
 | 日记体 | 3月15日 晴 今天去了黄鹤楼，比想象中高。 |
 | 海子体 | 春天，十个海子全部复活 / 你站在楼上 / 江水是永不停息的诗 |
 
@@ -145,9 +150,38 @@
 3. EXIF GPS可能被手机APP抹除（微信等），需vision补全
 4. 中国地图坐标偏移（WGS-84→GCJ-02），高德自带转换
 5. 风格prompt需要调教，保证输出质量稳定
-6. Ollama Cloud Pro的API endpoint和鉴权方式需确认（云端代理服务，OpenAI兼容格式）
+6. ~~Ollama Cloud Pro的API endpoint和鉴权方式需确认~~ ✅ 已确认（OpenAI兼容格式，已测试通过）
 7. 照片压缩：上传前压缩到合理大小避免API超时
-7. 照片压缩：上传前压缩到合理大小避免API超时
+8. Ollama Cloud API Key需保存在环境变量，不能提交到Git
+9. gemini-3-flash-preview的reasoning字段会消耗token，需考虑是否显示/隐藏
+10. HEIC格式照片需浏览器端转换（demo照片为HEIC格式）
+
+### API 测试验证结论（2026-04-18）
+
+| API通道 | 状态 | 用途 |
+|--------|------|------|
+| Ollama Cloud gemini-3-flash-preview | ✅ 完全可用 | Vision+叙事（主力）|
+| Ollama Cloud qwen3-vl:235b-instruct | ✅ 可用 | Vision备选 |
+| Ollama Cloud qwen3.5:397b | ✅ 可用 | 纯文本备选（无vision，thinking慢）|
+| Ollama Cloud glm-5.1 | ✅ 可用 | 中文备选（无vision）|
+| Google AI Studio直连 | ❌ 中国大陆不可用 | 降级备选（需VPN）|
+
+**降级策略**：
+```
+实时调用Ollama Cloud gemini-3-flash-preview (默认)
+  ↓ API超时(>15s)
+重试1次
+  ↓ 仍然失败
+切换到Ollama Cloud qwen3-vl
+  ↓ 仍然失败
+本地预生成JSON（完全离线降级）
+```
+
+**关键发现**：
+- Streaming两种格式都可用，推荐OpenAI兼容格式 `/v1/chat/completions`
+- Vision输出JSON格式稳定，可直接用于结构化数据
+- 三种风格叙事质量均优秀，核心卖点已验证
+- gemini响应约2-3s，qwen3.5约5-8s（含thinking）
 
 ### 赛道匹配分析
 
@@ -189,11 +223,16 @@ AI体验赛道完美契合：
 **Decision**: 高德地图 JS API 2.0
 **Consequences**: 原生GCJ-02，中国数据最准确，免费额度大，WebGL渲染性能好。自定义样式需通过高德平台配置。
 
-### D6: AI模型
+### D6: AI模型与API通道
 
-**Context**: 需要vision能力理解照片+文学风格文本生成，有Google AI Studio API Key
-**Decision**: 使用Gemini 3.1 Flash（Google AI Studio直连），图片风格化扩展用gemini-3.1-flash-image-preview
-**Consequences**: Google AI Studio免费额度足够hackathon使用，Gemini的多模态能力强，中文叙事质量好。SDK直接调用比Ollama Cloud代理延迟更低更可控。如需降级可切换到Ollama Cloud qwen3.5或本地预生成JSON。
+**Context**: 需要vision能力理解照片+文学风格文本生成。经API测试，Google AI Studio在中国大陆无法直连。
+**Decision**: 使用Ollama Cloud代理的gemini-3-flash-preview（OpenAI兼容格式），备选qwen3-vl、qwen3.5、glm-5.1
+**Consequences**: 
+- API稳定可用，响应快（~2-3s），streaming支持好
+- 三种风格叙事质量已验证优秀
+- 必须使用`openai` SDK而非`@google/genai`
+- Ollama Cloud API Key需环境变量管理
+- Google AI Studio直连作为VPN环境下的备选，不作为主力
 
 ### D7: AI调用策略
 
@@ -206,3 +245,19 @@ AI体验赛道完美契合：
 **Context**: 上传后如何展示结果
 **Decision**: 逐步揭示式流程——上传→地图标记逐一亮起→选风格→叙事逐字浮现→分享
 **Consequences**: 每一步都有明确的用户关注点，过程感=记忆浮现的体验感。
+
+### D9: API通道选择
+
+**Context**: 经测试Google AI Studio直连在中国大陆不可用（连接超时），Ollama Cloud完全可用
+**Decision**: 使用Ollama Cloud作为唯一API通道，OpenAI兼容格式（`https://ollama.com/v1`）
+**Consequences**: 
+- 使用`openai` npm包，baselineURL指向Ollama Cloud
+- 模型名：`gemini-3-flash-preview`（主力），`qwen3-vl:235b-instruct`（vision备选），`qwen3.5:397b`（纯文本备选）
+- API Key从环境变量`OLLAMA_API_KEY`读取
+- 降级链：gemini-3-flash → qwen3-vl → 本地预生成JSON
+
+### D10: Demo照片格式
+
+**Context**: 准备了5张HEIC格式照片用于demo演示
+**Decision**: 使用temp-pictures目录中的5张HEIC照片作为demo数据，前端需支持HEIC→JPEG转换
+**Consequences**: 需要在上传流程中加入HEIC格式转换（使用heic2any库），确保demo流程顺畅
