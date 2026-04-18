@@ -10,30 +10,11 @@ export function ExperiencePage() {
   const updateChapter = useAppStore((s) => s.updateChapter)
   const style = useAppStore((s) => s.style)
   const setStyle = useAppStore((s) => s.setStyle)
-  const backgroundUrl = useAppStore((s) => s.styleBackgroundImage)
-  const setBackgroundUrl = useAppStore((s) => s.setStyleBackgroundImage)
   const [activeChapter, setActiveChapter] = useState(0)
-  const narrativeRef = useRef<HTMLDivElement>(null)
   const narrativeStarted = useRef<Set<string>>(new Set())
+  const sceneStarted = useRef<Set<string>>(new Set())
 
   const theme = STYLES[style]
-
-  useEffect(() => {
-    if (backgroundUrl) return
-    const bgPrompt = STYLES[style].backgroundPrompt
-    if (!bgPrompt) return
-
-    fetch('/api/generate-image', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt: bgPrompt, mode: 'background' }),
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.image) setBackgroundUrl(data.image)
-      })
-      .catch(console.error)
-  }, [style, backgroundUrl, STYLES[style].backgroundPrompt, setBackgroundUrl]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     chapters.forEach((chapter) => {
@@ -83,18 +64,23 @@ export function ExperiencePage() {
 
   useEffect(() => {
     chapters.forEach((chapter) => {
-      if (!chapter.narrative) return
+      if (sceneStarted.current.has(chapter.id)) return
       if (chapter.sceneImage) return
       if (chapter.generatingScene) return
 
-      const scenePhotos = chapter.photos.slice(0, 5)
-      const sceneDescription = scenePhotos
+      sceneStarted.current.add(chapter.id)
+
+      const analyses = chapter.photos
         .map((p) => p.analysis)
         .filter(Boolean)
-        .map((a) => `${a?.scene} at ${a?.location_guess}, ${a?.time_of_day}`)
+
+      if (analyses.length === 0) return
+
+      const sceneDescription = analyses
+        .map((a) => `${a?.scene} at ${a?.location_guess}, ${a?.time_of_day}, ${a?.season}`)
         .join('; ')
 
-      const prompt = `${theme.backgroundPrompt} Scene: ${sceneDescription}. Style: ${theme.label}. Create a cohesive artistic illustration.`
+      const prompt = `${theme.scenePrompt} Scene contains: ${sceneDescription}`
 
       updateChapter(chapter.id, { generatingScene: true })
       fetch('/api/generate-image', {
@@ -104,17 +90,16 @@ export function ExperiencePage() {
       })
         .then((r) => r.json())
         .then((data) => {
-          if (data.image) {
-            updateChapter(chapter.id, { sceneImage: data.image, generatingScene: false })
-          } else {
-            updateChapter(chapter.id, { generatingScene: false })
-          }
+          updateChapter(chapter.id, {
+            sceneImage: data.image || null,
+            generatingScene: false,
+          })
         })
         .catch(() => {
           updateChapter(chapter.id, { generatingScene: false })
         })
     })
-  }, [chapters, theme.label, theme.backgroundPrompt, updateChapter])
+  }, [chapters, theme.scenePrompt, updateChapter])
 
   const currentChapter = chapters[activeChapter]
 
@@ -127,10 +112,10 @@ export function ExperiencePage() {
         fontFamily: theme.font.body,
       }}
     >
-      {backgroundUrl && (
+      {theme.backgroundImage && (
         <div
-          className="fixed inset-0 opacity-20 bg-cover bg-center transition-opacity duration-1000"
-          style={{ backgroundImage: `url(${backgroundUrl})` }}
+          className="fixed inset-0 opacity-15 bg-cover bg-center transition-opacity duration-1000"
+          style={{ backgroundImage: `url(${theme.backgroundImage})` }}
         />
       )}
 
@@ -198,7 +183,7 @@ export function ExperiencePage() {
               ))}
             </div>
 
-            <div ref={narrativeRef} className="min-h-[120px]">
+            <div className="min-h-[120px]">
               {currentChapter.narrative ? (
                 <p
                   className="text-lg leading-relaxed whitespace-pre-wrap"

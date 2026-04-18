@@ -40,18 +40,3 @@ export function buildNarratePrompt(
   const prompt = customStylePrompt || stylePrompt
   return prompt.replace('{photoInfo}', photoInfo)
 }
-
-export function buildSceneImagePrompt(
-  photoAnalyses: PhotoAnalysis[],
-  stylePrompt: string
-): string {
-  const sceneDescription = photoAnalyses
-    .map((a) => `${a.scene} at ${a.location_guess}, ${a.time_of_day}, ${a.season}`)
-    .join('; ')
-
-  return `${stylePrompt} Scene contains: ${sceneDescription}. Generate a cohesive artistic illustration that captures the mood and atmosphere of these moments.`
-}
-
-export function buildStyleBackgroundPrompt(stylePrompt: string): string {
-  return stylePrompt
-}

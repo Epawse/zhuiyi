@@ -23,7 +23,8 @@ export interface StyleTheme {
     duration: number
   }
   mapStyle: string
-  backgroundPrompt: string
+  backgroundImage: string
+  scenePrompt: string
   narrativePrompt: string
 }
 
@@ -48,7 +49,8 @@ export const STYLES: Record<StyleType, StyleTheme> = {
     },
     animation: { type: 'ink', duration: 800 },
     mapStyle: 'amap://styles/whitesmoke',
-    backgroundPrompt: 'A serene traditional Chinese ink wash painting background with misty mountains and flowing water. Subtle colors, brush strokes texture, rice paper feel. Wide landscape composition.',
+    backgroundImage: '/bg-ancient.jpg',
+    scenePrompt: 'Traditional Chinese ink wash painting style. Misty mountains, flowing water, rice paper texture. Create a cohesive artistic illustration that captures the mood and atmosphere.',
     narrativePrompt: `你是编年史官，以中国传统编年体书写此人的记忆旅程。
 
 规则：
@@ -83,7 +85,8 @@ export const STYLES: Record<StyleType, StyleTheme> = {
     },
     animation: { type: 'fade', duration: 1200 },
     mapStyle: 'amap://styles/light',
-    backgroundPrompt: 'A warm vintage-style background with aged paper texture, soft sepia and brown tones, reminiscent of Marcel Proust era, with gentle light leaks and faded floral patterns. Suitable as a poetic memoir app background.',
+    backgroundImage: '/bg-proust.jpg',
+    scenePrompt: 'Warm vintage impressionist style. Aged paper texture, soft sepia and brown tones, gentle light leaks and faded floral patterns. Create a cohesive artistic illustration that captures the mood and atmosphere.',
     narrativePrompt: `你是记忆的拾荒者，以普鲁斯特《追忆似水年华》的笔触书写。
 
 规则：
@@ -118,7 +121,8 @@ export const STYLES: Record<StyleType, StyleTheme> = {
     },
     animation: { type: 'glitch', duration: 400 },
     mapStyle: 'amap://styles/dark',
-    backgroundPrompt: 'A dark cyberpunk cityscape background with neon lights, data streams, holographic overlays. Dominant colors: black, neon cyan (#00FFD4), and hot pink (#FF0066). Digital glitch effects, scan lines. Suitable as a futuristic app background.',
+    backgroundImage: '/bg-cyber.jpg',
+    scenePrompt: 'Dark cyberpunk cityscape style. Neon lights, data streams, holographic overlays. Dominant colors: black, neon cyan (#00FFD4), and hot pink (#FF0066). Digital glitch effects, scan lines. Create a cohesive artistic illustration that captures the mood and atmosphere.',
     narrativePrompt: `你是数据考古员，在2084年的废墟中解读这段旧记忆。
 
 规则：
@@ -153,7 +157,8 @@ export const STYLES: Record<StyleType, StyleTheme> = {
     },
     animation: { type: 'fade', duration: 800 },
     mapStyle: 'amap://styles/normal',
-    backgroundPrompt: '',
+    backgroundImage: '',
+    scenePrompt: '',
     narrativePrompt: '',
   },
 }

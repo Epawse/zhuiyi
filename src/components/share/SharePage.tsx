@@ -6,7 +6,6 @@ import { STYLES } from '@/types/style'
 export function SharePage() {
   const chapters = useAppStore((s) => s.chapters)
   const style = useAppStore((s) => s.style)
-  const backgroundUrl = useAppStore((s) => s.styleBackgroundImage)
   const theme = STYLES[style]
   const reset = useAppStore((s) => s.reset)
 
@@ -16,10 +15,10 @@ export function SharePage() {
       style={{ backgroundColor: theme.colors.background, color: theme.colors.text }}
     >
       <div className="max-w-md w-full">
-        {backgroundUrl && (
+        {theme.backgroundImage && (
           <div
             className="absolute inset-0 opacity-10 bg-cover bg-center"
-            style={{ backgroundImage: `url(${backgroundUrl})` }}
+            style={{ backgroundImage: `url(${theme.backgroundImage})` }}
           />
         )}
 

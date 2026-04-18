@@ -16,9 +16,6 @@ interface AppStore {
   style: StyleType
   setStyle: (style: StyleType) => void
 
-  styleBackgroundImage: string | null
-  setStyleBackgroundImage: (url: string | null) => void
-
   customStylePrompt: string
   setCustomStylePrompt: (prompt: string) => void
 
@@ -30,7 +27,6 @@ const initialState = {
   photos: [],
   chapters: [],
   style: 'ancient' as StyleType,
-  styleBackgroundImage: null as string | null,
   customStylePrompt: '',
 }
 
@@ -51,8 +47,7 @@ export const useAppStore = create<AppStore>((set) => ({
       chapters: s.chapters.map((c) => (c.id === id ? { ...c, ...partial } : c)),
     })),
 
-  setStyle: (style) => set({ style, styleBackgroundImage: null }),
-  setStyleBackgroundImage: (url) => set({ styleBackgroundImage: url }),
+  setStyle: (style) => set({ style }),
 
   setCustomStylePrompt: (prompt) => set({ customStylePrompt: prompt }),
 
