@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useAppStore } from '@/store/useAppStore'
 import { clusterPhotos } from '@/lib/photo/cluster'
 
@@ -85,34 +86,100 @@ export function ProcessingPage() {
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const analyzed = photos.filter((p) => p.analysis).length
+  const pct = photos.length > 0 ? Math.round((analyzed / photos.length) * 100) : 0
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4">
-      <h2 className="text-2xl font-serif mb-6">正在唤醒记忆...</h2>
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 bg-[#0a0a0f] overflow-hidden">
+      {/* Background glow */}
+      <div
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] rounded-full opacity-[0.04]"
+        style={{
+          background: 'radial-gradient(ellipse at center, #D4A574 0%, transparent 70%)',
+        }}
+      />
 
-      <div className="grid grid-cols-3 md:grid-cols-4 gap-3 max-w-lg mb-8">
-        {photos.map((photo) => (
-          <div key={photo.id} className="relative aspect-square rounded-lg overflow-hidden">
-            <img src={photo.preview} alt="" className="w-full h-full object-cover" />
-            {photo.analyzing && !photo.analysis && (
-              <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              </div>
-            )}
-            {photo.analysis && (
-              <div className="absolute top-1 right-1 w-4 h-4 bg-green-500 rounded-full" />
-            )}
-          </div>
-        ))}
-      </div>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8 }}
+        className="relative z-10 flex flex-col items-center"
+      >
+        <h2
+          className="text-2xl md:text-3xl mb-10 text-center"
+          style={{
+            fontFamily: 'var(--font-noto-serif), Georgia, serif',
+            color: 'rgba(245, 240, 232, 0.8)',
+          }}
+        >
+          正在唤醒记忆...
+        </h2>
 
-      <p className="text-gray-500 text-sm">
-        {analyzed} / {photos.length} 张照片已分析
-      </p>
+        {/* Photo grid with stagger reveal */}
+        <div className="grid grid-cols-3 md:grid-cols-4 gap-3 max-w-lg mb-8">
+          {photos.map((photo, i) => (
+            <motion.div
+              key={photo.id}
+              initial={{ opacity: 0, scale: 0.85 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, delay: i * 0.06 }}
+              className="relative aspect-square rounded-xl overflow-hidden"
+              style={{
+                boxShadow: photo.analysis
+                  ? '0 0 20px rgba(0, 200, 120, 0.15)'
+                  : '0 4px 16px rgba(0,0,0,0.4)',
+              }}
+            >
+              <img src={photo.preview} alt="" className="w-full h-full object-cover" />
+              <AnimatePresence>
+                {photo.analyzing && !photo.analysis && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="absolute inset-0 bg-black/50 flex items-center justify-center"
+                  >
+                    <div className="w-5 h-5 border-2 border-white/60 border-t-transparent rounded-full animate-spin" />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              {photo.analysis && (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="absolute top-1.5 right-1.5 w-3.5 h-3.5 bg-emerald-400 rounded-full shadow-[0_0_8px_rgba(52,211,153,0.5)]"
+                />
+              )}
+            </motion.div>
+          ))}
+        </div>
 
-      {errorMsg && (
-        <p className="text-red-500 text-sm mt-2">{errorMsg}</p>
-      )}
+        {/* Progress bar */}
+        <div className="w-64 h-1 rounded-full bg-white/5 overflow-hidden mb-4">
+          <motion.div
+            className="h-full rounded-full"
+            style={{
+              background: 'linear-gradient(90deg, #D4A574, #8B6914)',
+            }}
+            initial={{ width: 0 }}
+            animate={{ width: `${pct}%` }}
+            transition={{ duration: 0.5 }}
+          />
+        </div>
+
+        <p className="text-white/30 text-sm">
+          {analyzed} / {photos.length} 张照片已分析
+        </p>
+
+        {errorMsg && (
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-red-400 text-sm mt-3"
+          >
+            {errorMsg}
+          </motion.p>
+        )}
+      </motion.div>
     </div>
   )
 }

@@ -40,9 +40,7 @@ export interface PhotoChapter {
   centerLat: number
   centerLng: number
   narrative: ChapterNarrative | null
-  sceneImage: string | null
   generatingNarrative: boolean
-  generatingScene: boolean
 }
 
 export interface ChapterNarrative {
@@ -56,4 +54,6 @@ export interface HistoryEntry {
   style: StyleType
   chapterCount: number
   chapterSummaries: { title: string; location: string; narrativePreview: string }[]
+  coverImage?: string | null
+  narratives?: { title: string; text: string }[]
 }

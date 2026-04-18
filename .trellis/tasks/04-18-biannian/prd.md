@@ -113,7 +113,7 @@
 |---|---|---|
 | 前端框架 | Next.js 14 + React | SSR便于分享，开发快 |
 | 样式 | Tailwind CSS | 快速迭代 |
-| 地图 | 高德地图 JS API 2.0 | 中国GCJ-02坐标，免费额度 |
+| 地图 | Canvas自绘记忆星图 | 沉浸感优先，抽象星座连线替代真实底图（D14） |
 | EXIF | exifr | 浏览器端，成熟稳定 |
 | 动画 | Framer Motion | 时间线播放、照片浮现 |
 | AI | Gemini 3 Flash Preview (Ollama Cloud) | 文本+Vision理解，OpenAI兼容格式，中国大陆可达 |
@@ -121,7 +121,7 @@
 | AI图片生成 | ✅ Google AI Studio (需代理) | gemini-3.1-flash-image-preview，3种风格背景已验证通过 |
 | 状态管理 | Zustand | 轻量，跨平台可复用 |
 | 状态管理 | Zustand | 轻量，跨平台可复用 |
-| 存储 | IndexedDB | 客户端，hackathon足够 |
+| 存储 | IndexedDB | 客户端，完整历史持久化（D17） |
 | AI SDK | openai (npm) | OpenAI兼容格式，Ollama Cloud适配 |
 | 图片转换 | heic2any | HEIC→JPEG，iOS照片兼容 |
 | 部署 | Vercel | 一键部署 |
@@ -149,20 +149,18 @@
 
 自定义风格：用户输入描述 → Gemini同时生成叙事prompt + 建议配色方案(JSON) + 风格背景图 + 篇章场景图
 
-### 篇章场景图架构
+### 篇章场景图架构 (SUPERSEDED → 统一封面图 D13)
 
 ```
-照片聚类为篇章（3-5张/篇章）
+所有照片分析结果汇总
   ↓
-每篇章选取代表照片(3-5张) + 风格描述
+汇总 prompt: "A panoramic illustration capturing the journey through {locations} during {timeframe}, in {style} style"
   ↓
-gemini-3.1-flash-image-preview 多参考图模式
-  ↓
-生成1张场景插画（文+图→图）
+gemini-3.1-flash-image-preview → 1张统一封面图
 古风：水墨长卷   追忆：印象主义暖调   赛博：霓虹城景
 ```
 
-场景图是"记忆复苏"体验的关键——不只是文字变了，照片本身也融入了风格化的场景，形成完整叙事。
+统一封面图是"记忆复苏"体验的关键——一张图覆盖整个旅程，而非碎片化的per-chapter场景。
 
 ### 风格示例
 
@@ -325,12 +323,67 @@ AI体验赛道完美契合：
 - 篇章场景图：每篇章选3-5张代表照片+风减述→多参考图模式生成场景插画（P0）
 - 若代理不可用，降级为CSS主题+预制背景图
 
-### D12: 篇章场景图
+### D12: 篇章场景图 (SUPERSEDED by D13)
 
 **Context**: 纯文字叙事的视觉冲击力有限，需要篇章级别的场景插画让"记忆复苏"体验完整
-**Decision**: 每个篇章生成1张AI场景插画（多参考图+风减述→文+图生图）
+**Decision**: ~~每个篇章生成1张AI场景插画~~ → 改为统一封面图（见D13）
+**Consequences**: 原方案每篇章1张场景图，但生成时间长（15-40s/张×N篇章），且缺乏整体叙事感
+
+### D13: 统一封面图（替代per-chapter场景图）
+
+**Context**: 每篇章独立生成场景图太慢（3章=45-120s），且每张只反映单篇章，缺乏整体叙事感。NotebookLM的模式更优——一张封面图覆盖整个故事。
+**Decision**: 所有照片分析结果汇总 → 生成一张统一封面图（"记忆长卷"）
 **Consequences**: 
-- 使用gemini-3.1-flash-image-preview的"多参考图"能力（最多14张）
-- 每张场景图约15-40s生成，可串行展示增加"浮现"体验
-- 古风篇章→水墨长卷场景，追忆篇章→印象主义暖调场景，赛博篇章→霓虹城市场景
-- 开发量增加约1小时（新增1个API调用+场景图展示组件）
+- 仅1次API调用（~20s），体验连贯无断裂
+- Prompt: `"A panoramic artistic illustration capturing the journey through {locations} during {timeframe}, in {style} style. Elements: {key_scenes_combined}"`
+- 封面图作为ExperiencePage顶部hero，类似NotebookLM杂志封面
+- 章节内不再生成场景图，改用照片网格+叙事文本
+- 减少API调用次数，减少用户等待
+
+### D14: 星座/记忆星图（替代高德底图）
+
+**Context**: 原始高德底图（即使dark样式）仍是典型地图——线条、标注、路网——完全破坏"记忆浮现"的氛围。地图是"工具感"最强的UI元素。
+**Decision**: 不使用高德底图，改用Canvas自绘"记忆星图"——每张照片=发光点（缩略图+脉冲光晕），按时间顺序用曲线连接，深色背景，标注地点名但无标准地图元素
+**Consequences**: 
+- 地图本身成为"记忆浮现"的视觉隐喻——像星座连线
+- 不加载高德JS API，减小bundle size
+- 保留GCJ-02坐标（如需），但视觉上完全抽象化
+- `mapStyle` 字段不再需要（不再使用AMap样式）
+- `@amap/amap-jsapi-loader` 依赖可移除
+
+### D15: 沉浸式UI视觉重构
+
+**Context**: 当前UI"功能正确但情感缺席"——白底居中文字、零Framer Motion使用、inline style全无设计系统、Geist Sans字体不适配文学产品。产品卖点是"触碰记忆深处的瞬间"但UI感觉像表单。
+**Decision**: 采用 Liquid Glass + Storytelling-Driven 混合风格，全面重构UI
+**Consequences**: 
+- **首页**：深色hero背景 + 磨砂玻璃面板 + "记忆之门"隐喻
+- **字体**：中文 Noto Serif SC + 英文 Cormorant Garamond（替代Geist Sans）
+- **动画**：Framer Motion AnimatePresence页间过渡 + 叙事逐字浮现（typewriter效果）+ 照片光晕渐现
+- **主题**：CSS变量驱动（`--color-primary`等），Tailwind theme扩展
+- **面板**：磨砂玻璃效果（backdrop-blur）、阴影层次
+- **风格切换**：全页氛围过渡（背景+字体+色调同步）
+- **Processing**：仪式感动画替代网格spinner
+- `theme.animation` 字段将被实际消费
+
+### D16: 4K高清预制背景图
+
+**Context**: 当前3张背景图质量/尺寸不统一，首页无背景，背景opacity仅0.15几乎不可见
+**Decision**: 为首页+每种风格预生成3840×2160 4K背景图，提升背景可见度
+**Consequences**: 
+- 首页：深墨色+微光纹理hero背景
+- 古风：宣纸纹理+水墨晕染（非具象山水）
+- 追忆：暖调老照片/印象派光斑（非具象风景）
+- 赛博：暗色+数据流+霓虹线条（非具象城市）
+- 背景opacity提升到0.25-0.4，或用CSS gradient overlay融合
+- 自定义风格：提供默认中性深色背景
+- 用Gemini图片生成预生成，或外部工具生成后放入/public
+
+### D17: Hash路由 + IndexedDB历史
+
+**Context**: 无路由（纯state驱动），历史记录只存摘要（60字预览），点击历史卡片无反应，刷新丢失进度
+**Decision**: URL hash路由 + IndexedDB持久化完整历史
+**Consequences**: 
+- Hash路由：`#landing`, `#processing`, `#experience`, `#share`（hackathon最小改动）
+- IndexedDB存储完整chapter数据（叙事文本+风格+照片URLs），替代localStorage
+- 历史卡片onClick → hash跳转+从IndexedDB恢复
+- 刷新不丢失进度（从hash+IndexedDB恢复状态）

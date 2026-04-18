@@ -63,8 +63,6 @@ function createChapter(photos: PhotoFile[]): PhotoChapter {
     centerLat: lats.length ? lats.reduce((a, b) => a + b, 0) / lats.length : 0,
     centerLng: lngs.length ? lngs.reduce((a, b) => a + b, 0) / lngs.length : 0,
     narrative: null,
-    sceneImage: null,
     generatingNarrative: false,
-    generatingScene: false,
   }
 }

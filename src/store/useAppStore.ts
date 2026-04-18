@@ -18,6 +18,31 @@ function saveHistory(entries: HistoryEntry[]) {
   localStorage.setItem(HISTORY_KEY, JSON.stringify(entries.slice(0, MAX_HISTORY)))
 }
 
+// Hash routing helpers
+const STATE_TO_HASH: Record<AppState, string> = {
+  landing: '',
+  processing: '#processing',
+  experience: '#experience',
+  share: '#share',
+}
+
+const HASH_TO_STATE: Record<string, AppState> = {
+  '': 'landing',
+  '#': 'landing',
+  '#landing': 'landing',
+  '#processing': 'processing',
+  '#experience': 'experience',
+  '#share': 'share',
+}
+
+function syncHash(state: AppState) {
+  if (typeof window === 'undefined') return
+  const hash = STATE_TO_HASH[state]
+  if (window.location.hash !== hash) {
+    window.history.replaceState(null, '', hash || window.location.pathname)
+  }
+}
+
 interface AppStore {
   state: AppState
   setState: (state: AppState) => void
@@ -29,6 +54,12 @@ interface AppStore {
   chapters: PhotoChapter[]
   setChapters: (chapters: PhotoChapter[]) => void
   updateChapter: (id: string, partial: Partial<PhotoChapter>) => void
+
+  coverImage: string | null
+  setCoverImage: (url: string | null) => void
+
+  generatingCover: boolean
+  setGeneratingCover: (v: boolean) => void
 
   style: StyleType
   setStyle: (style: StyleType) => void
@@ -48,11 +79,16 @@ export const useAppStore = create<AppStore>((set, get) => ({
   state: 'landing' as AppState,
   photos: [] as PhotoFile[],
   chapters: [] as PhotoChapter[],
+  coverImage: null as string | null,
+  generatingCover: false,
   style: 'ancient' as StyleType,
   customStylePrompt: '',
   history: [] as HistoryEntry[],
 
-  setState: (state) => set({ state }),
+  setState: (state) => {
+    set({ state })
+    syncHash(state)
+  },
 
   setPhotos: (photos) => set({ photos }),
   updatePhoto: (id, partial) =>
@@ -65,6 +101,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
     set((s) => ({
       chapters: s.chapters.map((c) => (c.id === id ? { ...c, ...partial } : c)),
     })),
+
+  setCoverImage: (url) => set({ coverImage: url }),
+  setGeneratingCover: (v) => set({ generatingCover: v }),
 
   setStyle: (style) => set({ style }),
   setCustomStylePrompt: (prompt) => set({ customStylePrompt: prompt }),
@@ -82,20 +121,36 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   hydrate: () => {
     const saved = loadHistory()
-    if (saved.length > 0) set({ history: saved })
+    const hashState = HASH_TO_STATE[window.location.hash] || 'landing'
+    set({
+      history: saved,
+      state: hashState as AppState,
+    })
   },
 
   reset: () => set({
     state: 'landing' as AppState,
     photos: [] as PhotoFile[],
     chapters: [] as PhotoChapter[],
+    coverImage: null,
+    generatingCover: false,
     customStylePrompt: '',
     history: get().history,
   }),
 }))
 
 if (typeof window !== 'undefined') {
+  // Hydrate from localStorage + hash on load
   requestAnimationFrame(() => {
     useAppStore.getState().hydrate()
+  })
+
+  // Listen for back/forward navigation
+  window.addEventListener('hashchange', () => {
+    const hashState = HASH_TO_STATE[window.location.hash] || 'landing'
+    const currentState = useAppStore.getState().state
+    if (hashState !== currentState) {
+      useAppStore.setState({ state: hashState })
+    }
   })
 }

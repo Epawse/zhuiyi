@@ -145,10 +145,10 @@ export const STYLES: Record<StyleType, StyleTheme> = {
     colors: {
       primary: '#6366F1',
       secondary: '#8B5CF6',
-      background: '#FFFFFF',
-      surface: '#F5F5F5',
-      text: '#1A1A1A',
-      textMuted: '#666666',
+      background: '#0f0f1a',
+      surface: '#1a1a2e',
+      text: '#E0E0E0',
+      textMuted: '#888888',
       accent: '#6366F1',
     },
     font: {
@@ -156,9 +156,9 @@ export const STYLES: Record<StyleType, StyleTheme> = {
       body: '"Noto Sans SC", sans-serif',
     },
     animation: { type: 'fade', duration: 800 },
-    mapStyle: 'amap://styles/normal',
-    backgroundImage: '',
-    scenePrompt: '',
+    mapStyle: '',
+    backgroundImage: '/bg-custom.jpg',
+    scenePrompt: 'Elegant cosmic abstract style. Deep indigo and violet gradients, subtle star-like points, aurora-like flowing light. Create a cohesive artistic illustration that captures the mood and atmosphere.',
     narrativePrompt: '',
   },
 }
