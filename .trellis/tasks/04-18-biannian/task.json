@@ -3,7 +3,7 @@
   "name": "zhuiyi",
   "title": "追忆 - 照片叙事生成器",
   "description": "AI驱动的照片编年史生成器，将用户照片转化为多风格叙事体验",
-  "status": "research-done",
+  "status": "implementing",
   "dev_type": null,
   "scope": null,
   "package": null,
@@ -15,7 +15,7 @@
   "branch": null,
   "base_branch": "main",
   "worktree_path": null,
-  "current_phase": 2,
+  "current_phase": 3,
   "next_action": [
     {
       "phase": 1,
