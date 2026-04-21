@@ -60,7 +60,7 @@ function NarrativeBlock({ text, fontFamily, tkey, onComplete }: { text: string; 
 // === PHOTO FLOW MODE ===
 function PhotoFlow({ chapters, style }: { chapters: PhotoChapter[]; style: StyleType }) {
   const theme = STYLES[style]
-  const isDark = style === 'cyber'
+  const isDark = theme.isDark ?? false
 
   // Flatten: each photo is a slide, first photo of each chapter carries chapter info
   type PhotoSlide = {
@@ -196,7 +196,7 @@ function MemoryScroll({ chapters, style, summary, coverImage, onRetryNarrative }
   onRetryNarrative: (chapter: PhotoChapter) => void
 }) {
   const theme = STYLES[style]
-  const isDark = style === 'cyber'
+  const isDark = theme.isDark ?? false
   const bgImageUrl = coverImage || theme.backgroundImage || ''
 
   return (
@@ -410,7 +410,7 @@ function StarMap({ chapters, style, summary, coverImage }: {
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
 
   const theme = STYLES[style]
-  const isDark = style === 'cyber'
+  const isDark = theme.isDark ?? false
   const accentColor = theme.colors.accent
   const lineColor = isDark ? 'rgba(0,255,212,0.2)' : `${theme.colors.accent}25`
   const glowColor = isDark ? 'rgba(0,255,212,0.4)' : `${theme.colors.accent}50`
@@ -765,7 +765,7 @@ export function ExperiencePage() {
   const summaryStarted = useRef(false)
   const playedNarratives = useRef<Set<string>>(new Set())
   const theme = STYLES[style]
-  const isDark = style === 'cyber'
+  const isDark = theme.isDark ?? false
 
   const generateNarrative = useCallback((chapter: PhotoChapter) => {
     updateChapter(chapter.id, { generatingNarrative: true })

@@ -29,7 +29,7 @@ export function ProcessingPage() {
   const [errorMsg, setErrorMsg] = useState('')
 
   const theme = STYLES[style]
-  const isDark = style === 'cyber'
+  const isDark = theme.isDark ?? false
 
   const analyzeAll = async () => {
     setErrorMsg('')

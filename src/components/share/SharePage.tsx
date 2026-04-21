@@ -13,7 +13,7 @@ export function SharePage() {
   const addHistory = useAppStore((s) => s.addHistory)
   const reset = useAppStore((s) => s.reset)
   const theme = STYLES[style]
-  const isDark = style === 'cyber'
+  const isDark = theme.isDark ?? false
   const coverImage = useAppStore((s) => s.coverImage)
   const summary = useAppStore((s) => s.summary)
   const { isAnonymous } = useAuth()

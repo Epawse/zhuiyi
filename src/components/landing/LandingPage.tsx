@@ -54,6 +54,9 @@ export function LandingPage() {
     proust: { from: '#0a0a0f', via: '#0f0f1a', to: '#1a1a2e' },
     cyber: { from: '#050508', via: '#080812', to: '#0e0e1e' },
     custom: { from: '#0a0a0f', via: '#10101e', to: '#1a1a2e' },
+    diary: { from: '#0f0e0a', via: '#1a1710', to: '#2a2418' },
+    wuxia: { from: '#0a0a0f', via: '#0f0f1a', to: '#1a1a2e' },
+    prose: { from: '#050508', via: '#080812', to: '#0e0e1e' },
   }
   const bgTint = bgTintMap[style] ?? bgTintMap.proust
 
@@ -199,7 +202,14 @@ export function LandingPage() {
                 onClick={() => setStyle(key)}
                 className="relative px-5 py-2 rounded-full text-sm transition-colors"
                 style={{
-                  fontFamily: s.id === 'ancient' ? '"Noto Serif SC", serif' : s.id === 'cyber' ? '"JetBrains Mono", monospace' : 'inherit',
+                  fontFamily:
+                    s.id === 'ancient' || s.id === 'wuxia' || s.id === 'diary'
+                      ? '"Noto Serif SC", serif'
+                      : s.id === 'cyber'
+                        ? '"JetBrains Mono", monospace'
+                        : s.id === 'prose'
+                          ? '"Cormorant Garamond", serif'
+                          : 'inherit',
                   color: isActive ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.45)',
                   border: `1px solid ${isActive ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.08)'}`,
                   backgroundColor: isActive ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.03)',
