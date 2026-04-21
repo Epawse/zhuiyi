@@ -1,5 +1,7 @@
 import { create } from 'zustand'
 import { AppState, PhotoFile, PhotoChapter, StyleType, HistoryEntry, JourneySummary } from '@/types'
+import { createClient } from '@/lib/supabase/client'
+import { saveHistoryToCloud, loadHistoryFromCloud, migrateHistoryToCloud } from '@/lib/supabase/history'
 
 const HISTORY_KEY = 'zhuiyi-history'
 const MAX_HISTORY = 20
@@ -77,6 +79,12 @@ interface AppStore {
   clearHistory: () => void
   hydrate: () => void
 
+  // Auth-aware persistence
+  userId: string | null
+  isLinked: boolean
+  setAuth: (userId: string | null, isLinked: boolean) => void
+  syncHistoryToCloud: () => Promise<void>
+
   reset: () => void
 }
 
@@ -91,6 +99,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
   summary: null as JourneySummary | null,
   generatingSummary: false,
   history: [] as HistoryEntry[],
+
+  // Auth-aware persistence fields
+  userId: null as string | null,
+  isLinked: false,
 
   setState: (state) => {
     set({ state })
@@ -125,6 +137,16 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const history = [entry, ...current].slice(0, MAX_HISTORY)
     saveHistory(history)
     set({ history })
+
+    // If user is linked, also save to Supabase (fire-and-forget)
+    const { isLinked, userId } = get()
+    if (isLinked && userId) {
+      const supabase = createClient()
+      // Fire-and-forget: don't await, don't block UI
+      saveHistoryToCloud(supabase, userId, entry, entry.coverImage || undefined).catch((err) => {
+        console.error('[store] Failed to save history to cloud:', err)
+      })
+    }
   },
 
   clearHistory: () => {
@@ -132,11 +154,50 @@ export const useAppStore = create<AppStore>((set, get) => ({
     set({ history: [] })
   },
 
+  setAuth: (userId, isLinked) => {
+    set({ userId, isLinked })
+  },
+
+  syncHistoryToCloud: async () => {
+    const { isLinked, userId } = get()
+    if (!isLinked || !userId) return
+
+    try {
+      const supabase = createClient()
+      const result = await migrateHistoryToCloud(supabase, userId)
+      // Migration result tracked by result object; errors logged above
+
+      // After migration, reload history from Supabase (server = truth)
+      const cloudEntries = await loadHistoryFromCloud(supabase, userId)
+      if (cloudEntries.length > 0) {
+        set({ history: cloudEntries })
+        saveHistory(cloudEntries)
+      }
+    } catch (err) {
+      console.error('[store] syncHistoryToCloud failed:', err)
+    }
+  },
+
   hydrate: () => {
     const saved = loadHistory()
     set({
       history: saved,
     })
+
+    // If user is linked, fetch from Supabase and merge
+    const { isLinked, userId } = get()
+    if (isLinked && userId) {
+      const supabase = createClient()
+      loadHistoryFromCloud(supabase, userId).then((cloudEntries) => {
+        if (cloudEntries.length > 0) {
+          // Server = truth for linked users
+          set({ history: cloudEntries })
+          saveHistory(cloudEntries)
+        }
+      }).catch((err) => {
+        console.error('[store] Failed to load cloud history:', err)
+      })
+    }
   },
 
   reset: () => set({

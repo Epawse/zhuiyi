@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import localFont from 'next/font/local'
 import { Cormorant_Garamond, Noto_Serif_SC, JetBrains_Mono } from 'next/font/google'
+import { Providers } from './providers'
 import './globals.css'
 
 const geistSans = localFont({
@@ -49,7 +50,7 @@ export default function RootLayout({
   return (
     <html lang="zh-CN" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} ${cormorant.variable} ${notoSerif.variable} ${jetbrainsMono.variable} antialiased`} suppressHydrationWarning>
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   )

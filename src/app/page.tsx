@@ -6,6 +6,7 @@ import { ProcessingPage } from '@/components/processing/ProcessingPage'
 import { ExperiencePage } from '@/components/experience/ExperiencePage'
 import { SharePage } from '@/components/share/SharePage'
 import { ErrorBoundary } from '@/components/common/ErrorBoundary'
+import { AccountStatus } from '@/components/auth'
 import { AnimatePresence, motion } from 'framer-motion'
 
 const pageVariants = {
@@ -20,28 +21,29 @@ export default function Home() {
   return (
     <main className="min-h-screen">
       <ErrorBoundary>
-      <AnimatePresence mode="wait">
-        {appState === 'landing' && (
-          <motion.div key="landing" variants={pageVariants} initial="initial" animate="animate" exit="exit">
-            <LandingPage />
-          </motion.div>
-        )}
-        {appState === 'processing' && (
-          <motion.div key="processing" variants={pageVariants} initial="initial" animate="animate" exit="exit">
-            <ProcessingPage />
-          </motion.div>
-        )}
-        {appState === 'experience' && (
-          <motion.div key="experience" variants={pageVariants} initial="initial" animate="animate" exit="exit">
-            <ExperiencePage />
-          </motion.div>
-        )}
-        {appState === 'share' && (
-          <motion.div key="share" variants={pageVariants} initial="initial" animate="animate" exit="exit">
-            <SharePage />
-          </motion.div>
-        )}
-      </AnimatePresence>
+        <AccountStatus />
+        <AnimatePresence mode="wait">
+          {appState === 'landing' && (
+            <motion.div key="landing" variants={pageVariants} initial="initial" animate="animate" exit="exit">
+              <LandingPage />
+            </motion.div>
+          )}
+          {appState === 'processing' && (
+            <motion.div key="processing" variants={pageVariants} initial="initial" animate="animate" exit="exit">
+              <ProcessingPage />
+            </motion.div>
+          )}
+          {appState === 'experience' && (
+            <motion.div key="experience" variants={pageVariants} initial="initial" animate="animate" exit="exit">
+              <ExperiencePage />
+            </motion.div>
+          )}
+          {appState === 'share' && (
+            <motion.div key="share" variants={pageVariants} initial="initial" animate="animate" exit="exit">
+              <SharePage />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </ErrorBoundary>
     </main>
   )

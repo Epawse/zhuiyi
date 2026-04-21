@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useAppStore } from '@/store/useAppStore'
 import { STYLES } from '@/types/style'
 import { HistoryEntry } from '@/types'
+import { useAuth, LinkAccountModal } from '@/components/auth'
 
 export function SharePage() {
   const chapters = useAppStore((s) => s.chapters)
@@ -15,6 +16,8 @@ export function SharePage() {
   const isDark = style === 'cyber'
   const coverImage = useAppStore((s) => s.coverImage)
   const summary = useAppStore((s) => s.summary)
+  const { isAnonymous } = useAuth()
+  const [showLinkModal, setShowLinkModal] = useState(false)
 
   // Save to history
   useEffect(() => {
@@ -41,7 +44,7 @@ export function SharePage() {
       coverImage,
       narratives: chapters
         .filter((ch) => ch.narrative)
-        .map((ch) => ({ title: ch.title, text: ch.narrative!.text })),
+        .map((ch) => ({ title: ch.title, text: ch.narrative?.text || '' })),
       summary: summary?.text || undefined,
     }
     addHistory(entry)
@@ -224,6 +227,30 @@ export function SharePage() {
           重新开始
         </button>
       </motion.div>
+
+      {/* Auth prompt for anonymous users */}
+      {isAnonymous && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+          className="relative z-10 mt-4 w-full max-w-sm"
+        >
+          <button
+            onClick={() => setShowLinkModal(true)}
+            className="w-full py-2.5 rounded-full text-xs transition-all hover:scale-[1.01] active:scale-95"
+            style={{
+              background: 'rgba(255, 255, 255, 0.04)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              color: 'rgba(255, 255, 255, 0.45)',
+            }}
+          >
+            登录保存到云端，多设备同步
+          </button>
+        </motion.div>
+      )}
+
+      <LinkAccountModal isOpen={showLinkModal} onClose={() => setShowLinkModal(false)} />
     </div>
   )
 }

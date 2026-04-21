@@ -1,0 +1,22 @@
+# A string like `supabase/supabase:.33.0` or a link to a custom git repo.
+# This is used to determine the version of the Supabase CLI and the Docker images to use.
+# [CLI] The Supabase CLI version.
+# [CLI] Optional. Defaults to the latest version.
+# cli_version = "1.234.5"
+
+[auth]
+# Enables anonymous sign-ins for the app.
+enable_anonymous_sign_ins = true
+
+[auth.email]
+# Enables email sign-ups.
+enable_signup = true
+# Enables email confirmations.
+enable_confirmations = false
+
+[auth.external.google]
+enabled = true
+client_id = "YOUR_GOOGLE_CLIENT_ID"
+secret = "YOUR_GOOGLE_CLIENT_SECRET"
+# Overrides the default auth redirectUrl.
+redirect_uri = "http://localhost:3000/auth/callback"
