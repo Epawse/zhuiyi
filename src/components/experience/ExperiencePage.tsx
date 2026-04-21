@@ -3,18 +3,27 @@
 import { useAppStore } from '@/store/useAppStore'
 import { STYLES } from '@/types/style'
 import { Image, BookOpen, Map as MapIcon } from 'lucide-react'
-import { fetchWithTimeout } from '@/lib/fetch'
+import { fetchWithTimeout, checkRateLimit } from '@/lib/fetch'
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { StyleType, PhotoChapter, JourneySummary } from '@/types'
 
+// Module-level cache: tracks which narrative keys have been fully typed
+const playedCache = new Map<string, boolean>()
+
 type ViewMode = 'photo' | 'scroll' | 'map'
 
-function useTypewriter(text: string, speed = 40) {
+function useTypewriter(text: string, speed = 40, key?: string, onComplete?: () => void) {
   const [displayed, setDisplayed] = useState('')
   const [done, setDone] = useState(false)
 
   useEffect(() => {
+    const skip = key ? playedCache.get(key) : false
+    if (skip) {
+      setDisplayed(text)
+      setDone(true)
+      return
+    }
     setDisplayed('')
     setDone(false)
     if (!text) return
@@ -26,16 +35,18 @@ function useTypewriter(text: string, speed = 40) {
       if (i >= text.length) {
         clearInterval(timer)
         setDone(true)
+        if (key) playedCache.set(key, true)
+        onComplete?.()
       }
     }, speed)
     return () => clearInterval(timer)
-  }, [text, speed])
+  }, [text, speed, key, onComplete])
 
   return { displayed, done }
 }
 
-function NarrativeBlock({ text, fontFamily }: { text: string; fontFamily: string }) {
-  const { displayed, done } = useTypewriter(text, 35)
+function NarrativeBlock({ text, fontFamily, tkey, onComplete }: { text: string; fontFamily: string; tkey?: string; onComplete?: () => void }) {
+  const { displayed, done } = useTypewriter(text, 35, tkey, onComplete)
   return (
     <p
       className={`text-lg prose-zh whitespace-pre-wrap ${done ? '' : 'typewriter-cursor'}`}
@@ -76,14 +87,14 @@ function PhotoFlow({ chapters, style }: { chapters: PhotoChapter[]; style: Style
   })
 
   return (
-    <div className="h-screen overflow-y-auto snap-y snap-mandatory" style={{ scrollBehavior: 'smooth' }}>
+    <div className="h-dvh overflow-y-auto snap-y snap-mandatory" style={{ scrollBehavior: 'smooth' }}>
       {slides.map((slide) => {
         const { photo, isFirstInChapter, chapterTitle, chapterLocation, chapterTime } = slide
         const analysis = photo.analysis
         return (
           <div
             key={photo.id}
-            className="snap-start h-screen relative flex items-center justify-center"
+            className="snap-start h-dvh relative flex items-center justify-center"
           >
             {/* Full-bleed blurred background */}
             <img
@@ -224,7 +235,7 @@ function MemoryScroll({ chapters, style, summary, coverImage, onRetryNarrative }
             }}
           >
             <div className="w-8 h-0.5 mb-4" style={{ backgroundColor: theme.colors.accent }} />
-            <NarrativeBlock text={summary.text} fontFamily={theme.font.heading} />
+            <NarrativeBlock text={summary.text} fontFamily={theme.font.heading} tkey={`summary:${style}`} />
           </motion.div>
         )}
 
@@ -323,7 +334,7 @@ function MemoryScroll({ chapters, style, summary, coverImage, onRetryNarrative }
                     border: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.1)'}`,
                   }}
                 >
-                  <NarrativeBlock text={chapter.narrative.text} fontFamily={theme.font.heading} />
+                  <NarrativeBlock text={chapter.narrative.text} fontFamily={theme.font.heading} tkey={`${chapter.id}:${style}`} />
                 </div>
               )}
 
@@ -607,7 +618,7 @@ function StarMap({ chapters, style, summary, coverImage }: {
             }}
           >
             <div className="w-8 h-0.5 mb-4" style={{ backgroundColor: theme.colors.accent }} />
-            <NarrativeBlock text={summary.text} fontFamily={theme.font.heading} />
+            <NarrativeBlock text={summary.text} fontFamily={theme.font.heading} tkey={`summary:${style}`} />
           </motion.div>
         )}
 
@@ -752,6 +763,7 @@ export function ExperiencePage() {
   const narrativeStarted = useRef<Set<string>>(new Set())
   const coverStarted = useRef(false)
   const summaryStarted = useRef(false)
+  const playedNarratives = useRef<Set<string>>(new Set())
   const theme = STYLES[style]
   const isDark = style === 'cyber'
 
@@ -963,10 +975,33 @@ export function ExperiencePage() {
       {/* Style indicator — fixed top-right */}
       <button
         onClick={() => {
+          const err = checkRateLimit('style-switch', 12000)
+          if (err) {
+            // Silently ignore rapid clicks; no alert to avoid disrupting immersion
+            return
+          }
+
           const styles = Object.keys(STYLES) as StyleType[]
           const currentIdx = styles.indexOf(style)
           const nextStyle = styles[(currentIdx + 1) % styles.length]
-          if (nextStyle !== 'custom') setStyle(nextStyle)
+          if (nextStyle === 'custom') return
+
+          // Reset all generation state for full refresh
+          narrativeStarted.current.clear()
+          coverStarted.current = false
+          summaryStarted.current = false
+          playedCache.clear()
+
+          // Clear existing narratives, cover, summary so they regenerate
+          chapters.forEach((ch) => {
+            updateChapter(ch.id, { narrative: null, generatingNarrative: false })
+          })
+          setCoverImage(null)
+          setGeneratingCover(false)
+          setSummary(null)
+          setGeneratingSummary(false)
+
+          setStyle(nextStyle)
         }}
         className="fixed top-4 right-4 z-50 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs transition-all"
         style={{
