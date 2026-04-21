@@ -2,11 +2,15 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { LogIn, LogOut, Sun, Moon } from 'lucide-react'
+import { useAppStore } from '@/store/useAppStore'
 import { useAuth } from './AuthProvider'
 import { LinkAccountModal } from './LinkAccountModal'
 
 export function AccountStatus() {
   const { isAnonymous, isLinked, user, signOut, loading } = useAuth()
+  const theme = useAppStore((s) => s.theme)
+  const setTheme = useAppStore((s) => s.setTheme)
   const [showModal, setShowModal] = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -34,21 +38,10 @@ export function AccountStatus() {
       <>
         <button
           onClick={() => setShowModal(true)}
-          className="fixed top-4 right-4 z-40 px-4 py-2 rounded-full text-xs font-medium transition-all hover:scale-[1.02] active:scale-95"
-          style={{
-            background: 'rgba(255, 255, 255, 0.06)',
-            backdropFilter: 'blur(24px) saturate(120%)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            color: 'rgba(255, 255, 255, 0.7)',
-            boxShadow: '0 4px 24px rgba(0, 0, 0, 0.3)',
-          }}
+          className="fixed top-4 right-4 z-40 px-4 py-2 rounded-full text-xs font-medium glass text-secondary transition-all hover:scale-[1.02] active:scale-95"
         >
           <span className="flex items-center gap-1.5">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-              <polyline points="10 17 15 12 10 7" />
-              <line x1="15" y1="12" x2="3" y2="12" />
-            </svg>
+            <LogIn size={14} />
             登录保存
           </span>
         </button>
@@ -68,14 +61,7 @@ export function AccountStatus() {
     <div ref={dropdownRef} className="fixed top-4 right-4 z-40">
       <button
         onClick={() => setShowDropdown(!showDropdown)}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-full transition-all hover:scale-[1.02] active:scale-95"
-        style={{
-          background: 'rgba(255, 255, 255, 0.06)',
-          backdropFilter: 'blur(24px) saturate(120%)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          color: 'rgba(255, 255, 255, 0.7)',
-          boxShadow: '0 4px 24px rgba(0, 0, 0, 0.3)',
-        }}
+        className="flex items-center gap-2 px-3 py-1.5 rounded-full glass text-secondary transition-all hover:scale-[1.02] active:scale-95"
       >
         {/* Avatar */}
         {user.user_metadata?.avatar_url ? (
@@ -106,14 +92,22 @@ export function AccountStatus() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -4, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="absolute right-0 mt-2 w-40 rounded-xl overflow-hidden"
-            style={{
-              background: 'rgba(26, 26, 46, 0.95)',
-              backdropFilter: 'blur(40px) saturate(150%)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              boxShadow: '0 12px 40px rgba(0, 0, 0, 0.4)',
-            }}
+            className="absolute right-0 mt-2 w-40 rounded-xl overflow-hidden glass-strong shadow-elevated"
           >
+            {/* Theme toggle */}
+            <button
+              onClick={() => {
+                setShowDropdown(false)
+                setTheme(theme === 'dark' ? 'light' : 'dark')
+              }}
+              className="w-full px-4 py-2.5 text-left text-xs transition-colors flex items-center gap-2 text-muted hover:bg-white/[0.06]"
+            >
+              {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+              {theme === 'dark' ? '切换亮色' : '切换暗色'}
+            </button>
+
+            <div className="h-px bg-divider mx-4" />
+
             <button
               onClick={async () => {
                 setShowDropdown(false)
@@ -123,20 +117,9 @@ export function AccountStatus() {
                   console.error('[AccountStatus] Sign out failed:', err)
                 }
               }}
-              className="w-full px-4 py-2.5 text-left text-xs transition-colors flex items-center gap-2"
-              style={{ color: 'rgba(255, 255, 255, 0.6)' }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.06)'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent'
-              }}
+              className="w-full px-4 py-2.5 text-left text-xs transition-colors flex items-center gap-2 text-muted hover:bg-white/[0.06]"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                <polyline points="16 17 21 12 16 7" />
-                <line x1="21" y1="12" x2="9" y2="12" />
-              </svg>
+              <LogOut size={14} />
               退出登录
             </button>
           </motion.div>

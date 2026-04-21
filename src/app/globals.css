@@ -2,16 +2,118 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ========================================
+   Design Tokens — Semantic Color System
+   Supports dark (default) and light themes
+   ======================================== */
+
 :root {
-  --color-primary: #D4A574;
-  --color-accent: #D4A574;
-  --color-bg: #0a0a0f;
-  --color-surface: #1a1a2e;
-  --color-text: #F5F0E8;
-  --color-text-muted: #8B7355;
+  /* Typography */
   --font-heading: var(--font-cormorant), var(--font-noto-serif), Georgia, serif;
   --font-body: var(--font-noto-serif), Georgia, serif;
   --font-mono: var(--font-jetbrains), "Fira Code", monospace;
+
+  /* Dark theme (default) */
+  --color-bg: #050508;
+  --color-bg-elevated: #0a0a0f;
+  --color-surface: #1a1a2e;
+  --color-foreground: #f5f0e8;
+  --color-secondary: rgba(255, 255, 255, 0.7);
+  --color-muted: rgba(255, 255, 255, 0.5);
+  --color-accent: #d4a574;
+
+  /* Glass tokens — dark */
+  --color-glass-bg: rgba(255, 255, 255, 0.03);
+  --color-glass-bg-subtle: rgba(255, 255, 255, 0.02);
+  --color-glass-bg-strong: rgba(255, 255, 255, 0.06);
+  --color-glass-bg-card: rgba(255, 255, 255, 0.04);
+  --color-glass-border: rgba(255, 255, 255, 0.1);
+  --color-glass-border-subtle: rgba(255, 255, 255, 0.06);
+  --color-glass-border-strong: rgba(255, 255, 255, 0.15);
+  --color-glass-border-card-top: rgba(255, 255, 255, 0.15);
+
+  /* Divider */
+  --color-divider: rgba(255, 255, 255, 0.06);
+
+  /* Shadows — dark (rarely used; borders preferred) */
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.3);
+  --shadow-elevated: 0 12px 40px rgba(0, 0, 0, 0.4);
+
+  /* Spacing scale (4px base) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-8: 48px;
+
+  /* Radius scale */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  /* Animation timing */
+  --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out-quart: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --duration-micro: 150ms;
+  --duration-standard: 300ms;
+  --duration-page: 400ms;
+  --stagger-item: 50ms;
+  --stagger-group: 100ms;
+}
+
+/* Light theme */
+[data-theme="light"] {
+  --color-bg: #f5f2ed;
+  --color-bg-elevated: #ffffff;
+  --color-surface: #f0ece6;
+  --color-foreground: #1a1a2e;
+  --color-secondary: rgba(0, 0, 0, 0.6);
+  --color-muted: rgba(0, 0, 0, 0.4);
+  --color-accent: #b8860b;
+
+  --color-glass-bg: rgba(0, 0, 0, 0.03);
+  --color-glass-bg-subtle: rgba(0, 0, 0, 0.02);
+  --color-glass-bg-strong: rgba(0, 0, 0, 0.06);
+  --color-glass-bg-card: rgba(0, 0, 0, 0.04);
+  --color-glass-border: rgba(0, 0, 0, 0.08);
+  --color-glass-border-subtle: rgba(0, 0, 0, 0.06);
+  --color-glass-border-strong: rgba(0, 0, 0, 0.12);
+  --color-glass-border-card-top: rgba(0, 0, 0, 0.1);
+
+  --color-divider: rgba(0, 0, 0, 0.06);
+
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.08);
+  --shadow-elevated: 0 12px 40px rgba(0, 0, 0, 0.1);
+}
+
+/* Auto theme detection */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --color-bg: #f5f2ed;
+    --color-bg-elevated: #ffffff;
+    --color-surface: #f0ece6;
+    --color-foreground: #1a1a2e;
+    --color-secondary: rgba(0, 0, 0, 0.6);
+    --color-muted: rgba(0, 0, 0, 0.4);
+    --color-accent: #b8860b;
+
+    --color-glass-bg: rgba(0, 0, 0, 0.03);
+    --color-glass-bg-subtle: rgba(0, 0, 0, 0.02);
+    --color-glass-bg-strong: rgba(0, 0, 0, 0.06);
+    --color-glass-bg-card: rgba(0, 0, 0, 0.04);
+    --color-glass-border: rgba(0, 0, 0, 0.08);
+    --color-glass-border-subtle: rgba(0, 0, 0, 0.06);
+    --color-glass-border-strong: rgba(0, 0, 0, 0.12);
+    --color-glass-border-card-top: rgba(0, 0, 0, 0.1);
+
+    --color-divider: rgba(0, 0, 0, 0.06);
+
+    --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.08);
+    --shadow-elevated: 0 12px 40px rgba(0, 0, 0, 0.1);
+  }
 }
 
 body {
@@ -19,7 +121,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background: var(--color-bg);
-  color: var(--color-text);
+  color: var(--color-foreground);
 }
 
 @layer utilities {
@@ -28,7 +130,43 @@ body {
   }
 }
 
-/* Typewriter cursor animation */
+/* ========================================
+   Glass Token System (Liquid Glass)
+   ======================================== */
+
+.glass {
+  background: var(--color-glass-bg);
+  backdrop-filter: blur(24px) saturate(120%);
+  -webkit-backdrop-filter: blur(24px) saturate(120%);
+  border: 1px solid var(--color-glass-border);
+}
+
+.glass-subtle {
+  background: var(--color-glass-bg-subtle);
+  backdrop-filter: blur(16px) saturate(120%);
+  -webkit-backdrop-filter: blur(16px) saturate(120%);
+  border: 1px solid var(--color-glass-border-subtle);
+}
+
+.glass-strong {
+  background: var(--color-glass-bg-strong);
+  backdrop-filter: blur(32px) saturate(150%);
+  -webkit-backdrop-filter: blur(32px) saturate(150%);
+  border: 1px solid var(--color-glass-border-strong);
+}
+
+.glass-card {
+  background: var(--color-glass-bg-card);
+  backdrop-filter: blur(24px) saturate(120%);
+  -webkit-backdrop-filter: blur(24px) saturate(120%);
+  border: 1px solid var(--color-glass-border);
+  border-top: 1px solid var(--color-glass-border-card-top);
+}
+
+/* ========================================
+   Typewriter cursor animation
+   ======================================== */
+
 @keyframes blink-cursor {
   0%, 100% { opacity: 1; }
   50% { opacity: 0; }
@@ -42,22 +180,30 @@ body {
   margin-left: 1px;
 }
 
-/* Glass panel utility */
-.glass {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(24px) saturate(120%);
-  -webkit-backdrop-filter: blur(24px) saturate(120%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+/* ========================================
+   Shimmer skeleton loading
+   ======================================== */
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
 
-.glass-strong {
-  background: rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(40px) saturate(150%);
-  -webkit-backdrop-filter: blur(40px) saturate(150%);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--color-glass-bg) 0%,
+    var(--color-glass-bg-strong) 50%,
+    var(--color-glass-bg) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
 }
 
-/* Subtle noise texture */
+/* ========================================
+   Subtle noise texture
+   ======================================== */
+
 .noise-overlay {
   position: relative;
 }
@@ -73,11 +219,75 @@ body {
   background-size: 256px 256px;
 }
 
-/* Smooth scroll for prefers-reduced-motion */
+/* ========================================
+   Focus ring (accessible)
+   ======================================== */
+
+.focus-ring:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-accent);
+  border-radius: var(--radius-sm);
+}
+
+/* ========================================
+   Reduced motion
+   ======================================== */
+
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ========================================
+   Safe area insets (mobile notch/home indicator)
+   ======================================== */
+
+.safe-area-inset-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-area-inset-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.safe-area-inset-x {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* ========================================
+   Chinese typography optimization
+   ======================================== */
+
+.prose-zh {
+  line-height: 1.9;
+  text-wrap: pretty;
+  word-break: break-word;
+}
+
+.prose-zh p {
+  margin-bottom: 1.5em;
+}
+
+.prose-zh p:last-child {
+  margin-bottom: 0;
+}
+
+/* ========================================
+   High contrast mode
+   ======================================== */
+
+@media (prefers-contrast: high) {
+  .glass,
+  .glass-subtle,
+  .glass-strong,
+  .glass-card {
+    border-width: 2px;
   }
 }

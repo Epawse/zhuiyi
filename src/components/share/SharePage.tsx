@@ -61,7 +61,7 @@ export function SharePage() {
 
   return (
     <div
-      className="min-h-screen flex flex-col items-center py-8 px-4 noise-overlay"
+      className="min-h-dvh flex flex-col items-center py-8 px-4 noise-overlay"
       style={{ backgroundColor: bgBase, color: isDark ? '#E0E0E0' : '#F5F0E8' }}
     >
       {theme.backgroundImage && (
@@ -79,13 +79,9 @@ export function SharePage() {
         className="relative z-10 w-full max-w-sm"
       >
         <div
-          className="rounded-3xl overflow-hidden"
+          className="rounded-3xl overflow-hidden glass-strong"
           style={{
             aspectRatio: '9/16',
-            background: `linear-gradient(to bottom, ${isDark ? 'rgba(10,10,15,0.95)' : 'rgba(26,26,46,0.95)'}, ${isDark ? 'rgba(10,10,15,0.98)' : 'rgba(26,26,46,0.98)'})`,
-            border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.1)'}`,
-            boxShadow: '0 24px 80px rgba(0,0,0,0.5)',
-            backdropFilter: 'blur(40px)',
           }}
         >
           {/* Cover image area — top 35% */}
@@ -149,11 +145,7 @@ export function SharePage() {
               {chapters.map((chapter, i) => (
                 <div
                   key={chapter.id}
-                  className="rounded-xl p-3"
-                  style={{
-                    backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.06)',
-                    border: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.08)'}`,
-                  }}
+                  className="rounded-xl p-3 glass-subtle"
                 >
                   <div className="flex items-center gap-2 mb-1.5">
                     <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: theme.colors.accent }} />
@@ -238,12 +230,7 @@ export function SharePage() {
         >
           <button
             onClick={() => setShowLinkModal(true)}
-            className="w-full py-2.5 rounded-full text-xs transition-all hover:scale-[1.01] active:scale-95"
-            style={{
-              background: 'rgba(255, 255, 255, 0.04)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              color: 'rgba(255, 255, 255, 0.45)',
-            }}
+            className="w-full py-2.5 rounded-full text-xs transition-all hover:scale-[1.01] active:scale-95 glass-subtle text-muted"
           >
             登录保存到云端，多设备同步
           </button>

@@ -85,7 +85,23 @@ interface AppStore {
   setAuth: (userId: string | null, isLinked: boolean) => void
   syncHistoryToCloud: () => Promise<void>
 
+  // Theme
+  theme: 'dark' | 'light'
+  setTheme: (theme: 'dark' | 'light') => void
+
   reset: () => void
+}
+
+function getInitialTheme(): 'dark' | 'light' {
+  if (typeof window === 'undefined') return 'dark'
+  const saved = localStorage.getItem('zhuiyi-theme')
+  if (saved === 'light' || saved === 'dark') return saved
+  return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
+}
+
+function applyTheme(theme: 'dark' | 'light') {
+  if (typeof document === 'undefined') return
+  document.documentElement.setAttribute('data-theme', theme)
 }
 
 export const useAppStore = create<AppStore>((set, get) => ({
@@ -103,6 +119,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
   // Auth-aware persistence fields
   userId: null as string | null,
   isLinked: false,
+
+  // Theme
+  theme: 'dark' as 'dark' | 'light',
 
   setState: (state) => {
     set({ state })
@@ -156,6 +175,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   setAuth: (userId, isLinked) => {
     set({ userId, isLinked })
+  },
+
+  setTheme: (theme) => {
+    applyTheme(theme)
+    localStorage.setItem('zhuiyi-theme', theme)
+    set({ theme })
   },
 
   syncHistoryToCloud: async () => {
@@ -216,6 +241,23 @@ export const useAppStore = create<AppStore>((set, get) => ({
 if (typeof window !== 'undefined') {
   // Hydrate from localStorage immediately (not deferred)
   useAppStore.getState().hydrate()
+
+  // Initialize theme
+  const initialTheme = getInitialTheme()
+  useAppStore.setState({ theme: initialTheme })
+  applyTheme(initialTheme)
+
+  // Listen for system theme changes
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: light)')
+  mediaQuery.addEventListener('change', (e) => {
+    const saved = localStorage.getItem('zhuiyi-theme')
+    // Only auto-switch if user hasn't manually set a preference
+    if (!saved) {
+      const newTheme = e.matches ? 'light' : 'dark'
+      useAppStore.setState({ theme: newTheme })
+      applyTheme(newTheme)
+    }
+  })
 
   // Listen for back/forward navigation
   window.addEventListener('hashchange', () => {

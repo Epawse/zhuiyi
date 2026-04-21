@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { Clock } from 'lucide-react'
 import { useAppStore } from '@/store/useAppStore'
 import { UploadArea } from './UploadArea'
 import { STYLES } from '@/types/style'
@@ -57,7 +58,7 @@ export function LandingPage() {
   const bgTint = bgTintMap[style] ?? bgTintMap.proust
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 relative overflow-hidden bg-[#0a0a0f]">
+    <main className="min-h-dvh flex flex-col items-center justify-center px-4 relative overflow-hidden bg-[#0a0a0f]">
       {/* Background gradient layers - style-tinted */}
       <div
         className="absolute inset-0 transition-colors duration-1000"
@@ -110,10 +111,7 @@ export function LandingPage() {
         transition={{ duration: 0.6, delay: 0.5 }}
         className="absolute top-4 right-4 z-50 flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white/5 backdrop-blur border border-white/10 text-white/50 hover:bg-white/10 hover:text-white/70 transition-all text-sm"
       >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="10" />
-          <polyline points="12 6 12 12 16 14" />
-        </svg>
+        <Clock size={14} />
         <span>历史记录</span>
         {history.length > 0 && (
           <span className="bg-white/15 text-white/80 text-[10px] rounded-full px-1.5 py-0.5 min-w-[18px] text-center">{history.length}</span>
@@ -271,7 +269,7 @@ export function LandingPage() {
           选择风格后上传照片开始
         </motion.p>
       </motion.div>
-    </div>
+    </main>
   )
 }
 

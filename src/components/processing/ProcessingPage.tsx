@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useAppStore } from '@/store/useAppStore'
 import { STYLES } from '@/types/style'
 import { clusterPhotos } from '@/lib/photo/cluster'
+import { Check } from 'lucide-react'
 import { fetchWithTimeout } from '@/lib/fetch'
 
 const FAILED_ANALYSIS = {
@@ -95,7 +96,7 @@ export function ProcessingPage() {
     || photos[0]?.preview
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
+    <div className="min-h-dvh relative overflow-hidden">
       <AnimatePresence mode="wait">
         {bgPhoto && (
           <motion.div
@@ -136,7 +137,7 @@ export function ProcessingPage() {
         />
       )}
 
-      <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-4">
+      <div className="relative z-10 min-h-dvh flex flex-col items-center justify-center px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -162,7 +163,7 @@ export function ProcessingPage() {
                   className="w-full h-full object-cover"
                 />
                 {!currentPhoto.analysis && (
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent animate-pulse" />
+                  <div className="absolute inset-0 skeleton-shimmer" />
                 )}
                 {currentPhoto.analysis && (
                   <motion.div
@@ -175,9 +176,7 @@ export function ProcessingPage() {
                       boxShadow: `0 0 16px ${theme.colors.accent}60`,
                     }}
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
+                    <Check size={14} strokeWidth={3} />
                   </motion.div>
                 )}
               </motion.div>

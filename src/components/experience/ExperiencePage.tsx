@@ -2,6 +2,7 @@
 
 import { useAppStore } from '@/store/useAppStore'
 import { STYLES } from '@/types/style'
+import { Image, BookOpen, Map as MapIcon } from 'lucide-react'
 import { fetchWithTimeout } from '@/lib/fetch'
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -37,7 +38,7 @@ function NarrativeBlock({ text, fontFamily }: { text: string; fontFamily: string
   const { displayed, done } = useTypewriter(text, 35)
   return (
     <p
-      className={`text-lg leading-[1.9] whitespace-pre-wrap ${done ? '' : 'typewriter-cursor'}`}
+      className={`text-lg prose-zh whitespace-pre-wrap ${done ? '' : 'typewriter-cursor'}`}
       style={{ fontFamily }}
     >
       {displayed}
@@ -188,7 +189,7 @@ function MemoryScroll({ chapters, style, summary, coverImage, onRetryNarrative }
   const bgImageUrl = coverImage || theme.backgroundImage || ''
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-dvh">
       {/* Fixed background */}
       {bgImageUrl && (
         <div className="fixed inset-0 z-0">
@@ -566,12 +567,12 @@ function StarMap({ chapters, style, summary, coverImage }: {
         ctx.fillText(p.label, x, y - dotRadius - 10)
       }
     })
-  }, [points, dimensions, hoveredPoint, accentColor, lineColor, glowColor, textColor])
+  }, [points, dimensions, hoveredPoint, accentColor, lineColor, glowColor, textColor, isDark])
 
   if (chapters.length === 0) return null
 
   return (
-    <div className="min-h-screen relative">
+    <div className="min-h-dvh relative">
       {/* Full-bleed background */}
       {bgImageUrl && (
         <div className="fixed inset-0 z-0">
@@ -921,14 +922,14 @@ export function ExperiencePage() {
     map: '星图',
   }
 
-  const modeIcons: Record<ViewMode, string> = {
-    photo: 'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z',
-    scroll: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253',
-    map: 'M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z M15 11a3 3 0 11-6 0 3 3 0 016 0z',
+  const modeIconMap: Record<ViewMode, React.ReactNode> = {
+    photo: <Image size={14} />,
+    scroll: <BookOpen size={14} />,
+    map: <MapIcon size={14} />,
   }
 
   return (
-    <div className="min-h-screen relative" style={{ backgroundColor: isDark ? '#0a0a0f' : '#1a1a2e' }}>
+    <div className="min-h-dvh relative" style={{ backgroundColor: isDark ? '#0a0a0f' : '#1a1a2e' }}>
       {/* Mode switcher — fixed top-left */}
       <div className="fixed top-4 left-4 z-50">
         <div
@@ -944,15 +945,15 @@ export function ExperiencePage() {
             <button
               key={mode}
               onClick={() => setViewMode(mode)}
-              className="relative px-3 py-2 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5"
+              aria-label={`切换至${modeLabels[mode]}模式`}
+              aria-pressed={viewMode === mode}
+              className="relative px-3 py-2 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 focus-ring"
               style={{
                 backgroundColor: viewMode === mode ? (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.15)') : 'transparent',
                 color: viewMode === mode ? theme.colors.accent : (isDark ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.5)'),
               }}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d={modeIcons[mode]} />
-              </svg>
+              {modeIconMap[mode]}
               <span className="hidden sm:inline">{modeLabels[mode]}</span>
             </button>
           ))}
@@ -983,17 +984,17 @@ export function ExperiencePage() {
       {/* Content by mode */}
       <AnimatePresence mode="wait">
         {viewMode === 'photo' && (
-          <motion.div key="photo" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }} className="min-h-screen">
+          <motion.div key="photo" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }} className="min-h-dvh">
             <PhotoFlow chapters={chapters} style={style} />
           </motion.div>
         )}
         {viewMode === 'scroll' && (
-          <motion.div key="scroll" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }} className="min-h-screen">
+          <motion.div key="scroll" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }} className="min-h-dvh">
             <MemoryScroll chapters={chapters} style={style} summary={summary} coverImage={coverImage} onRetryNarrative={generateNarrative} />
           </motion.div>
         )}
         {viewMode === 'map' && (
-          <motion.div key="map" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }} className="min-h-screen">
+          <motion.div key="map" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }} className="min-h-dvh">
             <StarMap chapters={chapters} style={style} summary={summary} coverImage={coverImage} />
           </motion.div>
         )}

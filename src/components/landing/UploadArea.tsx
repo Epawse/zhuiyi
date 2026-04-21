@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from 'react'
 import { motion } from 'framer-motion'
+import { Camera, Upload } from 'lucide-react'
 import { useAppStore } from '@/store/useAppStore'
 import { convertHeicToJpeg } from '@/lib/photo/heic'
 import { compressImage } from '@/lib/photo/compress'
@@ -87,42 +88,16 @@ export function UploadArea() {
         }
       `}
     >
-      {/* Camera / aperture SVG icon */}
+      {/* Camera icon */}
       <div className="flex justify-center mb-5">
-        <svg
-          width="48"
-          height="48"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="text-white/30"
-        >
-          <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
-          <circle cx="12" cy="13" r="3" />
-        </svg>
+        <Camera size={48} strokeWidth={1} className="text-white/30" />
       </div>
 
       <p className="text-white/50 mb-1.5 text-sm">拖拽照片到这里</p>
       <p className="text-[11px] text-white/20 mb-5">支持 JPG、PNG、HEIC 格式</p>
 
       <label className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full cursor-pointer transition-all bg-white/[0.08] border border-white/[0.12] hover:bg-white/[0.14] hover:border-white/[0.18] text-white/70 hover:text-white/90 text-sm">
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-          <polyline points="17 8 12 3 7 8" />
-          <line x1="12" y1="3" x2="12" y2="15" />
-        </svg>
+        <Upload size={16} />
         选择照片
         <input
           type="file"

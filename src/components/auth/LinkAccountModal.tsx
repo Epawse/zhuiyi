@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { X, Check, Mail } from 'lucide-react'
 import { useAuth } from './AuthProvider'
 
 interface LinkAccountModalProps {
@@ -14,6 +15,16 @@ export function LinkAccountModal({ isOpen, onClose }: LinkAccountModalProps) {
   const [email, setEmail] = useState('')
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [errorMessage, setErrorMessage] = useState('')
+
+  // Close on Escape key
+  useEffect(() => {
+    if (!isOpen) return
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, onClose])
 
   const handleEmailLink = async () => {
     if (!email.trim()) return
@@ -64,53 +75,39 @@ export function LinkAccountModal({ isOpen, onClose }: LinkAccountModalProps) {
 
           {/* Modal */}
           <motion.div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="link-account-title"
             initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
             transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
           >
-            <div
-              className="w-full max-w-sm rounded-2xl p-6 pointer-events-auto"
-              style={{
-                background: 'rgba(26, 26, 46, 0.95)',
-                backdropFilter: 'blur(40px) saturate(150%)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                boxShadow: '0 24px 80px rgba(0, 0, 0, 0.5)',
-              }}
-            >
+            <div className="w-full max-w-sm rounded-2xl p-6 pointer-events-auto glass-strong shadow-elevated">
               {/* Header */}
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-medium" style={{ color: '#F5F0E8' }}>
+                <h2 id="link-account-title" className="text-lg font-medium text-foreground">
                   登录保存到云端
                 </h2>
                 <button
                   onClick={handleClose}
-                  className="w-8 h-8 rounded-full flex items-center justify-center transition-colors"
-                  style={{ backgroundColor: 'rgba(255,255,255,0.06)' }}
+                  className="w-8 h-8 rounded-full flex items-center justify-center transition-colors glass-subtle text-muted hover:text-secondary"
                 >
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" strokeLinecap="round">
-                    <line x1="1" y1="1" x2="13" y2="13" />
-                    <line x1="13" y1="1" x2="1" y2="13" />
-                  </svg>
+                  <X size={14} />
                 </button>
               </div>
 
               {/* Success state */}
               {status === 'success' ? (
                 <div className="text-center py-4">
-                  <div
-                    className="w-12 h-12 rounded-full mx-auto mb-3 flex items-center justify-center"
-                    style={{ backgroundColor: 'rgba(0, 255, 212, 0.1)' }}
-                  >
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00FFD4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
+                  <div className="w-12 h-12 rounded-full mx-auto mb-3 flex items-center justify-center glass-subtle">
+                    <Check size={24} className="text-emerald-400" />
                   </div>
-                  <p className="text-sm mb-4" style={{ color: 'rgba(255,255,255,0.7)' }}>
+                  <p className="text-sm mb-4 text-secondary">
                     确认邮件已发送到 {email}
                   </p>
-                  <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                  <p className="text-xs text-muted">
                     请点击邮件中的链接完成绑定
                   </p>
                 </div>
@@ -124,12 +121,7 @@ export function LinkAccountModal({ isOpen, onClose }: LinkAccountModalProps) {
                       onChange={(e) => setEmail(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleEmailLink()}
                       placeholder="输入邮箱地址"
-                      className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all"
-                      style={{
-                        backgroundColor: 'rgba(255,255,255,0.05)',
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        color: '#F5F0E8',
-                      }}
+                      className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all glass-subtle text-foreground placeholder:text-muted"
                       disabled={status === 'loading'}
                     />
                   </div>
@@ -137,33 +129,24 @@ export function LinkAccountModal({ isOpen, onClose }: LinkAccountModalProps) {
                   <button
                     onClick={handleEmailLink}
                     disabled={!email.trim() || status === 'loading'}
-                    className="w-full py-3 rounded-xl text-sm font-medium transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed"
-                    style={{
-                      backgroundColor: 'rgba(255,255,255,0.08)',
-                      border: '1px solid rgba(255,255,255,0.12)',
-                      color: '#F5F0E8',
-                    }}
+                    className="w-full py-3 rounded-xl text-sm font-medium transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed glass text-foreground flex items-center justify-center gap-2"
                   >
+                    <Mail size={16} />
                     {status === 'loading' ? '处理中...' : '绑定邮箱'}
                   </button>
 
                   {/* Divider */}
                   <div className="flex items-center gap-3 my-5">
-                    <div className="flex-1 h-px" style={{ backgroundColor: 'rgba(255,255,255,0.08)' }} />
-                    <span className="text-xs" style={{ color: 'rgba(255,255,255,0.3)' }}>或者</span>
-                    <div className="flex-1 h-px" style={{ backgroundColor: 'rgba(255,255,255,0.08)' }} />
+                    <div className="flex-1 h-px bg-divider" />
+                    <span className="text-xs text-muted">或者</span>
+                    <div className="flex-1 h-px bg-divider" />
                   </div>
 
                   {/* Google button */}
                   <button
                     onClick={handleGoogleLink}
                     disabled={status === 'loading'}
-                    className="w-full py-3 rounded-xl text-sm font-medium transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2.5"
-                    style={{
-                      backgroundColor: 'rgba(255,255,255,0.06)',
-                      border: '1px solid rgba(255,255,255,0.12)',
-                      color: '#F5F0E8',
-                    }}
+                    className="w-full py-3 rounded-xl text-sm font-medium transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2.5 glass-subtle text-foreground"
                   >
                     <svg width="18" height="18" viewBox="0 0 18 18">
                       <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615Z" fill="#4285F4"/>
@@ -176,13 +159,13 @@ export function LinkAccountModal({ isOpen, onClose }: LinkAccountModalProps) {
 
                   {/* Error message */}
                   {status === 'error' && errorMessage && (
-                    <p className="mt-3 text-xs text-center" style={{ color: '#FF4D6A' }}>
+                    <p className="mt-3 text-xs text-center text-rose-400">
                       {errorMessage}
                     </p>
                   )}
 
                   {/* Subtitle */}
-                  <p className="mt-4 text-[11px] text-center" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                  <p className="mt-4 text-[11px] text-center text-muted">
                     绑定后可跨设备同步你的记忆旅程
                   </p>
                 </>
