@@ -21,7 +21,7 @@ interface AuthContextType {
   isLinked: boolean
   userId: string | null
   linkWithEmail: (email: string) => Promise<void>
-  linkWithGoogle: () => Promise<void>
+  signInWithGoogle: () => Promise<void>
   signOut: () => Promise<void>
 }
 
@@ -33,7 +33,7 @@ const AuthContext = createContext<AuthContextType>({
   isLinked: false,
   userId: null,
   linkWithEmail: async () => {},
-  linkWithGoogle: async () => {},
+  signInWithGoogle: async () => {},
   signOut: async () => {},
 })
 
@@ -77,12 +77,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Note: user becomes permanent after clicking the confirmation link in email
   }, [])
 
-  const linkWithGoogle = useCallback(async () => {
+  const signInWithGoogle = useCallback(async () => {
     if (!isSupabaseConfigured()) {
       throw new Error('Supabase is not configured')
     }
     const supabase = createClient()
-    const { error } = await supabase.auth.linkIdentity({
+    // Use a regular OAuth sign-in instead of manual identity linking. A linked
+    // Google identity can only belong to one user, so linkIdentity blocks the
+    // same account on a second device. The callback migration preserves any
+    // local anonymous history after the OAuth session replaces the temp user.
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
@@ -167,7 +171,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLinked,
     userId,
     linkWithEmail,
-    linkWithGoogle,
+    signInWithGoogle,
     signOut,
   }
 

@@ -92,6 +92,16 @@ test('migration enforces the same conflict keys used by cloud upserts', async ()
   )
 })
 
+test('Google auth uses a reusable sign-in flow instead of one-time identity linking', async () => {
+  const authProvider = await readFile(
+    new URL('../src/components/auth/AuthProvider.tsx', import.meta.url),
+    'utf8'
+  )
+
+  assert.match(authProvider, /auth\.signInWithOAuth\(/)
+  assert.doesNotMatch(authProvider, /auth\.linkIdentity\(/)
+})
+
 test('partial migration readback retains unmatched local entries', () => {
   const cloudEntry = { ...entry, summary: 'cloud wins' }
   const failedLocalEntry = {

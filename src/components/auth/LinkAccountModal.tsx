@@ -11,7 +11,7 @@ interface LinkAccountModalProps {
 }
 
 export function LinkAccountModal({ isOpen, onClose }: LinkAccountModalProps) {
-  const { linkWithEmail, linkWithGoogle } = useAuth()
+  const { linkWithEmail, signInWithGoogle } = useAuth()
   const [email, setEmail] = useState('')
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [errorMessage, setErrorMessage] = useState('')
@@ -43,7 +43,7 @@ export function LinkAccountModal({ isOpen, onClose }: LinkAccountModalProps) {
     setStatus('loading')
     setErrorMessage('')
     try {
-      await linkWithGoogle()
+      await signInWithGoogle()
       // On success, the page will redirect to Google OAuth, so we don't set success here
     } catch (err) {
       setStatus('error')
