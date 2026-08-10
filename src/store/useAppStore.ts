@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { AppState, PhotoFile, PhotoChapter, StyleType, HistoryEntry, JourneySummary } from '@/types'
 import { createClient } from '@/lib/supabase/client'
 import { saveHistoryToCloud, loadHistoryFromCloud, migrateHistoryToCloud } from '@/lib/supabase/history'
+import { mergeCloudAndLocalHistory } from '@/lib/supabase/history-sync'
 
 const HISTORY_KEY = 'zhuiyi-history'
 const MAX_HISTORY = 20
@@ -188,15 +189,21 @@ export const useAppStore = create<AppStore>((set, get) => ({
     if (!isLinked || !userId) return
 
     try {
+      const localEntries = get().history
       const supabase = createClient()
       const result = await migrateHistoryToCloud(supabase, userId)
-      // Migration result tracked by result object; errors logged above
 
       // After migration, reload history from Supabase (server = truth)
       const cloudEntries = await loadHistoryFromCloud(supabase, userId)
       if (cloudEntries.length > 0) {
-        set({ history: cloudEntries })
-        saveHistory(cloudEntries)
+        // A partial migration must not erase the local entries that failed to
+        // reach the cloud. Cloud rows win by stable ID; unmatched local rows
+        // remain available for the next idempotent retry.
+        const history = result.failed > 0
+          ? mergeCloudAndLocalHistory(cloudEntries, localEntries, MAX_HISTORY)
+          : cloudEntries
+        set({ history })
+        saveHistory(history)
       }
     } catch (err) {
       console.error('[store] syncHistoryToCloud failed:', err)

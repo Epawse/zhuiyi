@@ -1,6 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { HistoryEntry } from '@/types'
 import { uploadBase64Image } from './storage'
+import {
+  buildChapterUpserts,
+  buildHistoryEntryFromCloud,
+  buildJourneyUpsert,
+} from './history-sync'
 
 const HISTORY_KEY = 'zhuiyi-history'
 
@@ -33,8 +38,8 @@ export async function saveHistoryToCloud(
 ): Promise<string | null> {
   try {
     // 1. Upload cover image if present
-    let coverImageUrl: string | null = null
-    if (coverImageBase64) {
+    let coverImageUrl = entry.coverImage || null
+    if (coverImageBase64?.startsWith('data:image/')) {
       coverImageUrl = await uploadBase64Image(
         supabase,
         'covers',
@@ -42,53 +47,53 @@ export async function saveHistoryToCloud(
         `${entry.id}.png`,
         coverImageBase64
       )
+      if (!coverImageUrl) return null
     }
 
-    // 2. Insert journey row
+    // 2. Upsert the journey by its stable local history ID. Reusing the same
+    // source entry updates the existing row instead of creating a duplicate.
     const { data: journey, error: journeyError } = await supabase
       .from('journeys')
-      .insert({
-        user_id: userId,
-        style: entry.style,
-        cover_image_url: coverImageUrl,
-        summary_text: entry.summary || null,
+      .upsert(buildJourneyUpsert(userId, entry, coverImageUrl), {
+        onConflict: 'user_id,source_entry_id',
       })
       .select('id')
       .single()
 
     if (journeyError || !journey) {
-      console.error('[history] Journey insert failed:', journeyError?.message)
+      console.error('[history] Journey upsert failed:', journeyError?.message)
       return null
     }
 
     const journeyId = journey.id
 
-    // 3. Insert chapter rows
-    if (entry.narratives && entry.narratives.length > 0) {
-      const chapters = entry.narratives.map((narrative, index) => ({
-        journey_id: journeyId,
-        title: narrative.title,
-        narrative_text: narrative.text,
-        photo_urls: [] as string[],
-        analyses: [] as unknown[],
-        order_index: index,
-      }))
-
-      // Attach chapter summaries if available
-      entry.chapterSummaries?.forEach((summary, index) => {
-        if (chapters[index]) {
-          chapters[index].title = summary.title
-        }
-      })
-
+    // 3. Upsert chapters by order, then remove stale trailing chapters. This
+    // makes retries safe and also reconciles entries whose chapter count changed.
+    const chapters = buildChapterUpserts(journeyId, entry)
+    if (chapters.length > 0) {
       const { error: chaptersError } = await supabase
         .from('chapters')
-        .insert(chapters)
+        .upsert(chapters, { onConflict: 'journey_id,order_index' })
 
       if (chaptersError) {
-        console.error('[history] Chapters insert failed:', chaptersError.message)
-        // Journey was created but chapters failed — still return journey ID
+        console.error('[history] Chapters upsert failed:', chaptersError.message)
+        return null
       }
+    }
+
+    let staleChaptersQuery = supabase
+      .from('chapters')
+      .delete()
+      .eq('journey_id', journeyId)
+
+    if (chapters.length > 0) {
+      staleChaptersQuery = staleChaptersQuery.gte('order_index', chapters.length)
+    }
+
+    const { error: staleChaptersError } = await staleChaptersQuery
+    if (staleChaptersError) {
+      console.error('[history] Stale chapter cleanup failed:', staleChaptersError.message)
+      return null
     }
 
     return journeyId
@@ -134,29 +139,12 @@ export async function loadHistoryFromCloud(
 
       if (chaptersError) {
         console.error('[history] Load chapters failed for journey', journey.id, chaptersError.message)
+        // Do not return a partial cloud snapshot: callers persist a successful
+        // readback to localStorage, which would otherwise discard chapter data.
+        return []
       }
 
-      const narratives = (chapters || []).map((ch) => ({
-        title: ch.title,
-        text: ch.narrative_text,
-      }))
-
-      const chapterSummaries = (chapters || []).map((ch) => ({
-        title: ch.title,
-        location: '未知地点',
-        narrativePreview: ch.narrative_text?.slice(0, 60) || '',
-      }))
-
-      entries.push({
-        id: journey.id,
-        createdAt: journey.created_at,
-        style: journey.style as HistoryEntry['style'],
-        chapterCount: narratives.length,
-        chapterSummaries,
-        coverImage: journey.cover_image_url,
-        narratives: narratives.length > 0 ? narratives : undefined,
-        summary: journey.summary_text || undefined,
-      })
+      entries.push(buildHistoryEntryFromCloud(journey, chapters || []))
     }
 
     return entries

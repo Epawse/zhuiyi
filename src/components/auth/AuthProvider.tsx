@@ -54,31 +54,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const setAuth = useAppStore((s) => s.setAuth)
   const syncHistoryToCloud = useAppStore((s) => s.syncHistoryToCloud)
-  const hydrateStore = useAppStore((s) => s.hydrate)
-  const prevIsLinkedRef = useRef<boolean | null>(null)
-  const hasLoadedCloudRef = useRef(false)
 
   // Update Zustand store whenever auth state changes
   useEffect(() => {
     setAuth(userId, isLinked)
 
-    if (!userId) return
-
-    // When a linked user is first resolved (page load or account link),
-    // load cloud history. For returning linked users this replaces localStorage
-    // with Supabase data; for newly linked users it loads any existing cloud data.
-    if (isLinked && !hasLoadedCloudRef.current) {
-      hasLoadedCloudRef.current = true
-      hydrateStore()
-    }
-
-    // When user transitions from anonymous to linked (account linking event),
-    // also migrate localStorage entries to Supabase.
-    if (isLinked && prevIsLinkedRef.current === false) {
+    // A Google OAuth callback remounts the app with an already-linked session,
+    // so migration cannot depend on observing an in-memory false -> true edge.
+    // The cloud write is idempotent and reloads server history after it finishes.
+    if (userId && isLinked) {
       syncHistoryToCloud()
     }
-    prevIsLinkedRef.current = isLinked
-  }, [userId, isLinked, setAuth, syncHistoryToCloud, hydrateStore])
+  }, [userId, isLinked, setAuth, syncHistoryToCloud])
 
   const linkWithEmail = useCallback(async (email: string) => {
     if (!isSupabaseConfigured()) {

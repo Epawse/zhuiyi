@@ -41,6 +41,7 @@ export interface UserUpdate {
 export interface JourneyRow {
   id: string
   user_id: string
+  source_entry_id: string
   style: string
   cover_image_url: string | null
   summary_text: string | null
@@ -50,6 +51,7 @@ export interface JourneyRow {
 export interface JourneyInsert {
   id?: string
   user_id: string
+  source_entry_id: string
   style: string
   cover_image_url?: string | null
   summary_text?: string | null
@@ -59,6 +61,7 @@ export interface JourneyInsert {
 export interface JourneyUpdate {
   id?: string
   user_id?: string
+  source_entry_id?: string
   style?: string
   cover_image_url?: string | null
   summary_text?: string | null
