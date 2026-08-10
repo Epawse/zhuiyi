@@ -32,6 +32,73 @@ interface CloudChapter {
   narrative_text: string
 }
 
+interface ClearHistoryOptions {
+  isLinked: boolean
+  userId: string | null
+  deleteCloud: (userId: string) => Promise<void>
+  clearLocal: () => void
+  onError: (error: unknown) => void
+}
+
+interface DeleteOwnedCloudHistoryOptions {
+  userId: string
+  getAuthenticatedUserId: () => Promise<string | null>
+  listVisibleJourneyIds: (userId: string) => Promise<string[]>
+  deleteVisibleJourneys: (userId: string) => Promise<string[]>
+}
+
+/**
+ * Verify the live auth owner and require every journey visible before deletion
+ * to be returned by the delete operation. The latter detects RLS-silent no-ops.
+ */
+export async function deleteOwnedCloudHistory({
+  userId,
+  getAuthenticatedUserId,
+  listVisibleJourneyIds,
+  deleteVisibleJourneys,
+}: DeleteOwnedCloudHistoryOptions): Promise<void> {
+  const authenticatedUserId = await getAuthenticatedUserId()
+  if (authenticatedUserId !== userId) {
+    throw new Error('Authenticated user does not match linked history owner')
+  }
+
+  const visibleJourneyIds = await listVisibleJourneyIds(userId)
+  if (visibleJourneyIds.length === 0) return
+
+  const deletedIds = new Set(await deleteVisibleJourneys(userId))
+  if (visibleJourneyIds.some((journeyId) => !deletedIds.has(journeyId))) {
+    throw new Error('Cloud history deletion was incomplete')
+  }
+}
+
+/**
+ * Clear history in source-of-truth order. Linked users must successfully
+ * delete cloud journeys before local history is removed; anonymous users never
+ * call the cloud dependency.
+ */
+export async function clearHistoryPersistence({
+  isLinked,
+  userId,
+  deleteCloud,
+  clearLocal,
+  onError,
+}: ClearHistoryOptions): Promise<boolean> {
+  try {
+    if (isLinked) {
+      if (!userId) {
+        throw new Error('Linked history cannot be cleared without a user ID')
+      }
+      await deleteCloud(userId)
+    }
+
+    clearLocal()
+    return true
+  } catch (error) {
+    onError(error)
+    return false
+  }
+}
+
 export function buildJourneyUpsert(
   userId: string,
   entry: HistoryEntry,

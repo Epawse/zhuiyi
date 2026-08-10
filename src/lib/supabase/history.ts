@@ -5,9 +5,47 @@ import {
   buildChapterUpserts,
   buildHistoryEntryFromCloud,
   buildJourneyUpsert,
+  deleteOwnedCloudHistory,
 } from './history-sync'
 
 const HISTORY_KEY = 'zhuiyi-history'
+
+/**
+ * Delete every cloud journey owned by the authenticated user.
+ * Chapters are removed by the database's ON DELETE CASCADE constraint.
+ *
+ * Rejects on failure so callers can preserve local history.
+ */
+export async function deleteHistoryFromCloud(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<void> {
+  await deleteOwnedCloudHistory({
+    userId,
+    getAuthenticatedUserId: async () => {
+      const { data: { user }, error } = await supabase.auth.getUser()
+      if (error) throw error
+      return user?.id ?? null
+    },
+    listVisibleJourneyIds: async (linkedUserId) => {
+      const { data, error } = await supabase
+        .from('journeys')
+        .select('id')
+        .eq('user_id', linkedUserId)
+      if (error) throw error
+      return (data || []).map((journey) => journey.id)
+    },
+    deleteVisibleJourneys: async (linkedUserId) => {
+      const { data, error } = await supabase
+        .from('journeys')
+        .delete()
+        .eq('user_id', linkedUserId)
+        .select('id')
+      if (error) throw error
+      return (data || []).map((journey) => journey.id)
+    },
+  })
+}
 
 /**
  * Load all localStorage history entries.

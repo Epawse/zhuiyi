@@ -1,8 +1,13 @@
 import { create } from 'zustand'
 import { AppState, PhotoFile, PhotoChapter, StyleType, HistoryEntry, JourneySummary } from '@/types'
 import { createClient } from '@/lib/supabase/client'
-import { saveHistoryToCloud, loadHistoryFromCloud, migrateHistoryToCloud } from '@/lib/supabase/history'
-import { mergeCloudAndLocalHistory } from '@/lib/supabase/history-sync'
+import {
+  deleteHistoryFromCloud,
+  loadHistoryFromCloud,
+  migrateHistoryToCloud,
+  saveHistoryToCloud,
+} from '@/lib/supabase/history'
+import { clearHistoryPersistence, mergeCloudAndLocalHistory } from '@/lib/supabase/history-sync'
 
 const HISTORY_KEY = 'zhuiyi-history'
 const MAX_HISTORY = 20
@@ -77,7 +82,7 @@ interface AppStore {
 
   history: HistoryEntry[]
   addHistory: (entry: HistoryEntry) => void
-  clearHistory: () => void
+  clearHistory: () => Promise<boolean>
   hydrate: () => void
 
   // Auth-aware persistence
@@ -169,9 +174,24 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }
   },
 
-  clearHistory: () => {
-    saveHistory([])
-    set({ history: [] })
+  clearHistory: async () => {
+    const { isLinked, userId } = get()
+
+    return clearHistoryPersistence({
+      isLinked,
+      userId,
+      deleteCloud: async (linkedUserId) => {
+        const supabase = createClient()
+        await deleteHistoryFromCloud(supabase, linkedUserId)
+      },
+      clearLocal: () => {
+        saveHistory([])
+        set({ history: [] })
+      },
+      onError: (error) => {
+        console.error('[store] Failed to clear history:', error)
+      },
+    })
   },
 
   setAuth: (userId, isLinked) => {

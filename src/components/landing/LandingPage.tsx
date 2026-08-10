@@ -133,7 +133,7 @@ export function LandingPage() {
             <h3 className="text-sm font-medium text-white/70">历史记录</h3>
             {history.length > 0 && (
               <button
-                onClick={clearHistory}
+                onClick={() => { void clearHistory() }}
                 className="text-xs text-white/30 hover:text-red-400 transition-colors"
               >
                 清空

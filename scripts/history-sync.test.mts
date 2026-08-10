@@ -5,6 +5,8 @@ import {
   buildChapterUpserts,
   buildHistoryEntryFromCloud,
   buildJourneyUpsert,
+  clearHistoryPersistence,
+  deleteOwnedCloudHistory,
   mergeCloudAndLocalHistory,
 } from '../src/lib/supabase/history-sync.ts'
 import type { HistoryEntry } from '../src/types/photo.ts'
@@ -136,4 +138,141 @@ test('local retry candidates survive the history size limit', () => {
 
   assert.equal(merged.length, 20)
   assert.ok(merged.some((candidate) => candidate.id === failedLocalEntry.id))
+})
+
+test('anonymous history clear remains local-only', async () => {
+  let cloudDeleteCalls = 0
+  let localClearCalls = 0
+
+  const cleared = await clearHistoryPersistence({
+    isLinked: false,
+    userId: 'anonymous-user',
+    deleteCloud: async () => { cloudDeleteCalls++ },
+    clearLocal: () => { localClearCalls++ },
+    onError: assert.fail,
+  })
+
+  assert.equal(cleared, true)
+  assert.equal(cloudDeleteCalls, 0)
+  assert.equal(localClearCalls, 1)
+})
+
+test('linked history clear deletes cloud before local state', async () => {
+  const calls: string[] = []
+
+  const cleared = await clearHistoryPersistence({
+    isLinked: true,
+    userId: 'linked-user',
+    deleteCloud: async (userId) => { calls.push(`cloud:${userId}`) },
+    clearLocal: () => { calls.push('local') },
+    onError: assert.fail,
+  })
+
+  assert.equal(cleared, true)
+  assert.deepEqual(calls, ['cloud:linked-user', 'local'])
+})
+
+test('linked cloud deletion failure preserves local history and is reported', async () => {
+  const expectedError = new Error('cloud unavailable')
+  let localClearCalls = 0
+  let reportedError: unknown
+
+  const cleared = await clearHistoryPersistence({
+    isLinked: true,
+    userId: 'linked-user',
+    deleteCloud: async () => { throw expectedError },
+    clearLocal: () => { localClearCalls++ },
+    onError: (error) => { reportedError = error },
+  })
+
+  assert.equal(cleared, false)
+  assert.equal(localClearCalls, 0)
+  assert.equal(reportedError, expectedError)
+})
+
+test('incomplete linked auth state cannot clear local history', async () => {
+  let localClearCalls = 0
+  let reportedError: unknown
+
+  const cleared = await clearHistoryPersistence({
+    isLinked: true,
+    userId: null,
+    deleteCloud: async () => assert.fail('cloud delete must not run without a user ID'),
+    clearLocal: () => { localClearCalls++ },
+    onError: (error) => { reportedError = error },
+  })
+
+  assert.equal(cleared, false)
+  assert.equal(localClearCalls, 0)
+  assert.match(String(reportedError), /without a user ID/)
+})
+
+function createHistoryDeleteHarness({
+  authenticatedUserId = 'linked-user',
+  visibleIds = ['journey-1'],
+  deletedIds = visibleIds,
+}: {
+  authenticatedUserId?: string
+  visibleIds?: string[]
+  deletedIds?: string[]
+} = {}) {
+  const calls: string[] = []
+  const dependencies = {
+    getAuthenticatedUserId: async () => {
+      calls.push('auth')
+      return authenticatedUserId
+    },
+    listVisibleJourneyIds: async (userId: string) => {
+      calls.push(`read:${userId}`)
+      return visibleIds
+    },
+    deleteVisibleJourneys: async (userId: string) => {
+      calls.push(`delete:${userId}`)
+      return deletedIds
+    },
+  }
+
+  return { dependencies, calls }
+}
+
+test('cloud history deletion verifies auth, scopes the delete, and relies on chapter cascade', async () => {
+  const { dependencies, calls } = createHistoryDeleteHarness()
+
+  await deleteOwnedCloudHistory({ userId: 'linked-user', ...dependencies })
+
+  assert.deepEqual(calls, ['auth', 'read:linked-user', 'delete:linked-user'])
+
+  const initialMigration = await readFile(
+    new URL('../supabase/migrations/001_initial.sql', import.meta.url),
+    'utf8'
+  )
+
+  assert.match(
+    initialMigration,
+    /journey_id UUID NOT NULL REFERENCES public\.journeys\(id\) ON DELETE CASCADE/
+  )
+})
+
+test('cloud history deletion rejects a stale linked user before querying rows', async () => {
+  const { dependencies, calls } = createHistoryDeleteHarness({
+    authenticatedUserId: 'different-user',
+  })
+
+  await assert.rejects(
+    deleteOwnedCloudHistory({ userId: 'linked-user', ...dependencies }),
+    /does not match linked history owner/
+  )
+
+  assert.deepEqual(calls, ['auth'])
+})
+
+test('cloud history deletion rejects an RLS-silent incomplete delete', async () => {
+  const { dependencies, calls } = createHistoryDeleteHarness({ deletedIds: [] })
+
+  await assert.rejects(
+    deleteOwnedCloudHistory({ userId: 'linked-user', ...dependencies }),
+    /deletion was incomplete/
+  )
+
+  assert.deepEqual(calls, ['auth', 'read:linked-user', 'delete:linked-user'])
 })
