@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { ollamaClient } from '@/lib/ai/client'
+import { aiClient } from '@/lib/ai/client'
 import { PhotoExif } from '@/types'
 import { buildAnalyzePrompt } from '@/lib/ai/prompts'
 import { log } from '@/lib/logger'
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
 
     const prompt = buildAnalyzePrompt(exif || null)
 
-    const response = await ollamaClient.chat.completions.create({
+    const response = await aiClient.chat.completions.create({
       model: 'gemini-3-flash-preview',
       messages: [
         {

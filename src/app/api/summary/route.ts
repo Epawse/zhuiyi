@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { ollamaClient } from '@/lib/ai/client'
+import { aiClient } from '@/lib/ai/client'
 import { STYLES } from '@/types/style'
 import { log } from '@/lib/logger'
 
@@ -42,7 +42,7 @@ ${chaptersInfo}
 
     log.info(TAG, `Starting summary generation (style: ${style}, chapters: ${chapterNarratives.length})`)
 
-    const stream = await ollamaClient.chat.completions.create({
+    const stream = await aiClient.chat.completions.create({
       model: 'gemini-3-flash-preview',
       messages: [{ role: 'user', content: summaryPrompt }],
       stream: true,

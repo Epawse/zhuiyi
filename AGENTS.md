@@ -34,8 +34,9 @@ Keep this managed block so 'trellis update' can refresh the instructions.
 
 | Route | Method | Purpose | AI Service |
 |-------|--------|---------|------------|
-| `/api/analyze` | POST | Photo analysis (scene, location, mood) | Ollama Cloud gemini-3-flash-preview |
-| `/api/narrate` | POST (SSE) | Narrative generation (streaming) | Ollama Cloud gemini-3-flash-preview |
+| `/api/analyze` | POST | Photo analysis (scene, location, mood) | Google AI OpenAI-compatible API; Ollama fallback |
+| `/api/narrate` | POST (SSE) | Narrative generation (streaming) | Google AI OpenAI-compatible API; Ollama fallback |
+| `/api/summary` | POST (SSE) | Journey summary generation | Google AI OpenAI-compatible API; Ollama fallback |
 | `/api/generate-image` | POST | Image generation (background/scene) | Google AI Studio gemini-3.1-flash-image-preview |
 
 ## Logging
@@ -57,20 +58,20 @@ All API routes use a structured logger (`src/lib/logger.ts`):
 ## Environment Variables
 
 ```
-OLLAMA_API_KEY=       # Ollama Cloud API key (required)
-OLLAMA_BASE_URL=      # Ollama Cloud base URL (default: https://ollama.com/v1)
-GOOGLE_AI_API_KEY=    # Google AI Studio API key (required for image gen)
-HTTPS_PROXY=          # Proxy for Google AI Studio (default: http://127.0.0.1:7897)
-HTTP_PROXY=           # Fallback proxy
-AMAP_WEB_KEY=         # 高德地图 Web端 key (client-side)
-AMAP_SERVICE_KEY=     # 高德地图 Web服务 key
+GOOGLE_AI_API_KEY=                # Primary AI key; required in production
+OLLAMA_API_KEY=                   # Optional text/vision fallback
+OLLAMA_BASE_URL=                  # Optional fallback base URL (default: https://ollama.com/v1)
+NEXT_PUBLIC_SUPABASE_URL=         # Optional cloud auth/history sync
+NEXT_PUBLIC_SUPABASE_ANON_KEY=    # Optional cloud auth/history sync
+HTTPS_PROXY=                      # Optional local proxy for image generation
+HTTP_PROXY=                       # Optional local proxy fallback
 LOG_LEVEL=            # debug|info|warn|error (default: debug)
 ```
 
 ## Key Architecture Decisions
 
-- **Ollama Cloud** (OpenAI-compatible) for text+vision, **Google AI Studio** for image generation (needs proxy)
+- **Google AI** (OpenAI-compatible) is primary for text+vision and Google AI Studio handles image generation; Ollama remains an optional fallback
 - **Two-step AI flow**: analyze (structured JSON) → narrate (streaming text)
 - **Three-step image flow**: style background → chapter scene images
 - **HEIC conversion**: browser-side via heic2any before upload
-- **No database**: all state client-side (Zustand)
+- **Local-first persistence**: Zustand/localStorage works without cloud services; Supabase auth and history sync activate only when both public Supabase variables are configured

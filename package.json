@@ -2,6 +2,7 @@
   "name": "zhuiyi",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@10.15.0",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -20,6 +21,7 @@
     "openai": "^6.34.0",
     "react": "^18",
     "react-dom": "^18",
+    "undici": "6.21.3",
     "zustand": "^5.0.12"
   },
   "devDependencies": {

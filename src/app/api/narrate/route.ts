@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { ollamaClient } from '@/lib/ai/client'
+import { aiClient } from '@/lib/ai/client'
 import { PhotoAnalysis, StyleType } from '@/types'
 import { buildNarratePrompt } from '@/lib/ai/prompts'
 import { STYLES } from '@/types/style'
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     const styleTheme = STYLES[style]
     const prompt = buildNarratePrompt(analyses, styleTheme.narrativePrompt, customStylePrompt)
 
-    const stream = await ollamaClient.chat.completions.create({
+    const stream = await aiClient.chat.completions.create({
       model: 'gemini-3-flash-preview',
       messages: [{ role: 'user', content: prompt }],
       stream: true,

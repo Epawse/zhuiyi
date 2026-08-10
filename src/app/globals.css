@@ -9,9 +9,9 @@
 
 :root {
   /* Typography */
-  --font-heading: var(--font-cormorant), var(--font-noto-serif), Georgia, serif;
-  --font-body: var(--font-noto-serif), Georgia, serif;
-  --font-mono: var(--font-jetbrains), "Fira Code", monospace;
+  --font-heading: "Iowan Old Style", Baskerville, "Songti SC", STSong, "Noto Serif SC", "Noto Serif CJK SC", SimSun, Georgia, serif;
+  --font-body: "Songti SC", STSong, "Noto Serif SC", "Noto Serif CJK SC", SimSun, Georgia, serif;
+  --font-mono: var(--font-geist-mono), "SFMono-Regular", "Fira Code", monospace;
 
   /* Dark theme (default) */
   --color-bg: #050508;

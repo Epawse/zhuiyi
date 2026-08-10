@@ -2,7 +2,7 @@
 
 import { useAppStore } from '@/store/useAppStore'
 import { STYLES } from '@/types/style'
-import { Image, BookOpen, Map as MapIcon } from 'lucide-react'
+import { Image as ImageIcon, BookOpen, Map as MapIcon } from 'lucide-react'
 import { fetchWithTimeout, checkRateLimit } from '@/lib/fetch'
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -935,7 +935,7 @@ export function ExperiencePage() {
   }
 
   const modeIconMap: Record<ViewMode, React.ReactNode> = {
-    photo: <Image size={14} />,
+    photo: <ImageIcon size={14} />,
     scroll: <BookOpen size={14} />,
     map: <MapIcon size={14} />,
   }

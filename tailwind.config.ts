@@ -24,9 +24,9 @@ const config: Config = {
         surface: "var(--color-surface)",
       },
       fontFamily: {
-        heading: ["var(--font-cormorant)", "var(--font-noto-serif)", "Georgia", "serif"],
-        body: ["var(--font-noto-serif)", "Georgia", "serif"],
-        mono: ["var(--font-jetbrains)", '"Fira Code"', "monospace"],
+        heading: ['"Iowan Old Style"', "Baskerville", '"Songti SC"', "STSong", '"Noto Serif SC"', '"Noto Serif CJK SC"', "SimSun", "Georgia", "serif"],
+        body: ['"Songti SC"', "STSong", '"Noto Serif SC"', '"Noto Serif CJK SC"', "SimSun", "Georgia", "serif"],
+        mono: ["var(--font-geist-mono)", '"SFMono-Regular"', '"Fira Code"', "monospace"],
       },
       spacing: {
         "space-1": "var(--space-1)",
