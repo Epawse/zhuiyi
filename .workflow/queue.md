@@ -12,7 +12,7 @@
 
 ## Blocked
 
-- （空）
+- [S] WSL 归档 checkout 拉平 | owner: `/mnt/d/para/archives/mac-relocated-20260712/learning-4-archive/completed-hackathons/tiktok_hackathon` 原工作树 | blocked: 约 70 个既有 tracked 变更及未跟踪文件，收尾不得覆盖 | trigger: 原 owner 先提交、备份或清理 dirty 状态 | acceptance: `pull --ff-only` 后 behind=0，且活跃 checkout 无 Trellis 残留
 
 ## Done log
 
