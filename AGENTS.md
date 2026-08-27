@@ -7,6 +7,13 @@
 - **Run**: `pnpm dev` (http://localhost:3000)
 - **Build**: `pnpm build`
 
+## Working Contract
+
+- 本仓是业务实现、验证与发布事实的 owner；状态以当前代码、测试、Git、部署和运行时读回为准，不在仓外维护项目镜像。
+- 首次写入前确认目标路径、`pwd`、Git root 和工作树状态，保留与本任务无关的用户改动。
+- 短任务直接完成并验证，不创建流程状态文件。只有工作确需跨对话、跨 harness、跨机器或中断恢复时，才可临时建立 `.workflow/queue.md`，且只记录当前目标、下一动作、阻塞和证据指针。
+- 没有开放工作时不保留 queue；完成事实由 Git、测试、PR、部署或生产读回保存，不另建完成历史台账或会话包装层。
+
 ## API Routes
 
 | Route | Method | Purpose | AI Service |
