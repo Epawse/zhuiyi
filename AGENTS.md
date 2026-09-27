@@ -1,5 +1,7 @@
 # Project: 追忆 (Zhuīyì)
 
+> 已归档（2026-09-27，用户决定）。保留现有源码、分支与本地资料供查阅和恢复；没有当前开发、例行检查、更新或跨机同步任务。用户明确恢复后再开展新工作。
+
 ## Quick Reference
 
 - **Stack**: Next.js 14 (App Router) + TypeScript + Tailwind CSS + Zustand + Framer Motion
